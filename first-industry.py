@@ -17,7 +17,7 @@ conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
 curr = conn.cursor()
 
 
-
+ALL_CHARS = firstGo.getAllCharacters()
 
 
 
@@ -41,17 +41,30 @@ x (1 + Ore Processing skill x 0.02) )'''
 #oreProcSkill
 
 
-def reprocModule():
+
+    
+def findEStandingBest():
+    # b = base standing    
+    b = firstGo.getStandingName("Flicky G", "Republic Fleet")
+    #s = diplomacy skil
+    s = ALL_CHARS["Flicky G"]["Diplomacy"]
+    # E = 10 - (10-B) x (1 - 0.04 x S)
+    st = 10 - (10 - b) * (1 - 0.04 * s)
+    return st
+
+findEStandingBest()
+
+def reprocModuleBest():
     #station equipment
     #station tax
     #scrapmetal skill
+    s = ALL_CHARS["Flicky G"]["Scrapmetal Processing"]
     pass
-    
-def findStanding():
-    # E = 10 - (10-B) x (1 - 0.04 x S)
-# b = base standing
-#s = diplomacy skill
-    pass
+
+
+SELECT staStations.reprocessingEfficiency, inNames.itemName FROM staStations
+INNER JOIN invNames ON staStations.stationID = invNames.itemID
+WHERE staStations.stationsID = 
 
 
 #find blueprints in assets and calculate profite
