@@ -1,0 +1,94 @@
+sqlite> .schema staOperationServices
+CREATE TABLE "staOperationServices" (
+  "operationID" integer  NOT NULL,
+  "serviceID" integer NOT NULL,
+  PRIMARY KEY ("operationID","serviceID")
+);
+sqlite> .schema staStations
+CREATE TABLE "staStations" (
+  "stationID" integer NOT NULL,
+  "security" integer DEFAULT NULL,
+  "dockingCostPerVolume" double DEFAULT NULL,
+  "maxShipVolumeDockable" double DEFAULT NULL,
+  "officeRentalCost" integer DEFAULT NULL,
+  "operationID" integer  DEFAULT NULL,
+  "stationTypeID" integer DEFAULT NULL,
+  "corporationID" integer DEFAULT NULL,
+  "solarSystemID" integer DEFAULT NULL,
+  "constellationID" integer DEFAULT NULL,
+  "regionID" integer DEFAULT NULL,
+  "stationName" varchar(100) DEFAULT NULL,
+  "x" double DEFAULT NULL,
+  "y" double DEFAULT NULL,
+  "z" double DEFAULT NULL,
+  "reprocessingEfficiency" double DEFAULT NULL,
+  "reprocessingStationsTake" double DEFAULT NULL,
+  "reprocessingHangarFlag" integer  DEFAULT NULL,
+  PRIMARY KEY ("stationID")
+);
+CREATE INDEX "staStations_staStations_IX_region" ON "staStations" ("regionID");
+CREATE INDEX "staStations_staStations_IX_system" ON "staStations" ("solarSystemID");
+CREATE INDEX "staStations_staStations_IX_constellation" ON "staStations" ("constellationID");
+CREATE INDEX "staStations_staStations_IX_operation" ON "staStations" ("operationID");
+CREATE INDEX "staStations_staStations_IX_type" ON "staStations" ("stationTypeID");
+CREATE INDEX "staStations_staStations_IX_corporation" ON "staStations" ("corporationID");
+sqlite> .schema staoperations
+CREATE TABLE "staOperations" (
+  "activityID" integer  DEFAULT NULL,
+  "operationID" integer  NOT NULL,
+  "operationName" varchar(100) DEFAULT NULL,
+  "description" varchar(1000) DEFAULT NULL,
+  "fringe" integer  DEFAULT NULL,
+  "corridor" integer  DEFAULT NULL,
+  "hub" integer  DEFAULT NULL,
+  "border" integer  DEFAULT NULL,
+  "ratio" integer  DEFAULT NULL,
+  "caldariStationTypeID" integer DEFAULT NULL,
+  "minmatarStationTypeID" integer DEFAULT NULL,
+  "amarrStationTypeID" integer DEFAULT NULL,
+  "gallenteStationTypeID" integer DEFAULT NULL,
+  "joveStationTypeID" integer DEFAULT NULL,
+  PRIMARY KEY ("operationID")
+);
+
+
+
+CREATE TABLE "staServices" (
+  "serviceID" integer NOT NULL,
+  "serviceName" varchar(100) DEFAULT NULL,
+  "description" varchar(1000) DEFAULT NULL,
+  PRIMARY KEY ("serviceID")
+);
+
+
+select operationID from staStations where stationID = 60004516;
+33
+
+SELECT serviceID FROM staOperationServices WHERE operationID = 33;
+1
+4
+8
+16
+64
+256
+512
+4096
+65536
+262144
+1048576
+2097152
+4194304
+16777216
+33554432
+67108864
+
+SELECT serviceName FROM staServices WHERE serviceID = 1
+
+SELECT staServices.serviceName from staServices
+INNER JOIN staOperationServices ON staOperationServices.serviceID = staServices.serviceID 
+INNER JOIN staStations ON staStations.operationID = staOperationServices.operationID
+WHERE staStations.stationID = 60004516
+
+
+
+
