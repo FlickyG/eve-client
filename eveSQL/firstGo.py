@@ -222,282 +222,46 @@ def getAllStandings():
         theseCharacters = auth.character(allKeys["charID"]).Standings()
         # for x in theseCharacters.characterNPCStandings.NPCCorporations:
         #    print (x.fromName, x.standing)
-
-####################
-# Get Dabase Results
-####################
-def getItemId(interestingItem):
-    # gets the item ID when passed a striong represtning ther item of interes
-    query = "SELECT typeID, typeName FROM invTypes WHERE typeName = "
-    strr = "\""
-    curr.execute(strr.join([query, interestingItem, ""])) 
-    x = curr.fetchone()
-    y = x[0]
-    return y
-
-def getItemName(interestingItem):
-    query = "SELECT typeID, typeName FROM invTypes WHERE typeID = "
-    strr = "\""
-    curr.execute(strr.join([query, str(interestingItem), ""]))     
-    x = curr.fetchone()
-    return x[1]
-def getRegionID(interestingRegion):
-    query = "select regionName, regionID from mapRegions where regionName ="
-    strr = "\""
-    curr.execute(strr.join([query, interestingRegion, ""]))     
-    x = curr.fetchone()
-    y = x[1]
-    return y
-
-def getRegionName(interestingRegion):
-    query = "select regionName, regionID from mapRegions where regionID = "
-    strr = "\""
-    curr.execute(strr.join([query, str(interestingRegion), ""]))     
-    x = curr.fetchone()
-    y = x[0]
-    return y
-
-def getSystemID(interestingSystem):
-    query = "select regionID, solarSystemID, solarSystemName from mapSolarSystems where solarSystemName ="
-    strr = "\""
-    curr.execute(strr.join([query, interestingSystem, ""]))    
-    x = curr.fetchone()
-    y = x[1]
-    return y
-
-def getSystemName(interestingSystem):
-    query = "select regionID, solarSystemID, solarSystemName from mapSolarSystems where solarSystemID = "
-    strr = "\""
-    curr.execute(strr.join([query, str(interestingSystem), ""]))    
-    x = curr.fetchone()
-    y = x[2]
-    return y
-'''
-inputTypes = []
-a = set(curr.execute('SELECT materialTypeID FROM invTypeMaterials').fetchall()) # all the input material types
-for b in a: # turn a into a list
-    inputTypes.append(b[0])
+        
     
+##############
+# Standings, Taxes and REprocessing
+##################
 
-x = curr.execute('SELECT typeID, materialTypeID FROM invTypeMaterials').fetchall() # all manufacturable output
-for y in x:
-    if y[0] not in inputTypes:
-        print (y[0], "not in inputType", getItemName(y[0]))
-    else: # y[1] is made only of un-manufactuable parts
-        pass
-
-
-
-
-    sqlite> SELECT * FROM invTypeMaterials WHERE typeID = 24698;
-    
-   
-
-#find BP from item type
-select typeID from industryActivityProducts where productTypeID = 11188;
-
-#find BP ID from item name
-select industryActivityProducts.typeID, (select invTypes.typeName from invTypes where invTypes.typeID =  industryActivityProducts.typeID)
-from invTypes
-inner join industryActivityProducts
-on industryActivityProducts.productTypeID = invTypes.typeID
-where industryActivityProducts.productTypeID = (SELECT typeID from invTypes where typeName = 'EMP M')
-
-#find BP NAME from item name
-select invTypes.typeName
-from invTypes
-inner join industryActivityProducts
-on industryActivityProducts.productTypeID = invTypes.typeID
-where industryActivityProducts.productTypeID = (SELECT typeID from invTypes where typeName = 'Anathema')
-
-###
-#build from blueprint
-select invTypes.typeName, industryActivityMaterials.quantity, invTypes.typeID
-from invTypes
-INNER JOIN industryActivityMaterials
-ON  industryActivityMaterials.materialTypeID = invTypes.typeID
-WHERE industryActivityMaterials.typeID = 11189 AND activityID = 1;
-
-
-# get itemID from BlueprintId
-select productTypeID from  industryActivityProducts where typeID = 894;
-
-# reprocess from item ID
-select invTypes.typeName, invTypeMaterials.quantity, invTypes.typeID
-from invTypes
-INNER JOIN invTypeMaterials
-ON  invTypeMaterials.materialTypeID = invTypes.typeID
-WHERE invTypeMaterials.typeID = 11188;
-
-
-
-
-'''
-# get corp name from corp id
-def corpFromID(corpID):
-    conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
-    curr = conn.cursor()
-    curr.execute("SELECT invNames.itemName from invNames "
-                 "INNER JOIN crpNPCCorporations ON crpNPCCorporations.corporationID = invNames.itemID "
-                 "WHERE crpNPCCorporations.corporationID = {id}".
-                 format(id=corpID))
-    return (curr.fetchall())  
-
-
-    
-# select faction details from corp name
-
-def factionNameFromCorpName(corp):
-    conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
-    curr = conn.cursor()
-    curr.execute("SELECT crpNPCCorporations.corporationID, invNames.itemName, "
-                 "chrFactions.factionName, chrFactions.factionID FROM chrFactions "
-                 "INNER JOIN crpNPCCorporations ON crpNPCCorporations.factionID = chrFactions.factionID "
-                 "INNER JOIN invNames ON invNames.itemID = crpNPCCorporations.corporationID "
-                 "WHERE invNames.itemName = \"{cp}\"".
-                 format(cp=corp))  # Thukker Mix
-    x = curr.fetchall()
-    if len(x) == 1:
-        return x[0][2]
+def findStandingTax():
+    if (5.0 - (0.75 * findEStandingBest())) < 0.0:
+        t = 0
+        return (1 - t)
     else:
-        print ("factionNameFromCorpName returned more than 1 result", corp, x)
-
-# select faction from corp id
-def factionNameFromCorpID(corp):
-    conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
-    curr = conn.cursor()
-    curr.execute("SELECT crpNPCCorporations.corporationID, invNames.itemName, chrFactions.factionName, "
-                 "chrFactions.factionID FROM chrFactions "
-                 "INNER JOIN crpNPCCorporations ON crpNPCCorporations.factionID = chrFactions.factionID "
-                 "INNER JOIN invNames ON invNames.itemID = crpNPCCorporations.corporationID "
-                 "WHERE invNames.itemID = {cp}; ".
-                 format(cp=corp))  # 1000160
-    x = curr.fetchall()
-    if len(x) == 1:
-        return x[0][2]
-    else:
-        print ("factionNameFromCorpID returned more than 1 result", corp, x)            
-
-# select all corps for faction name
-def corpsFromFactionName(faction):
-    conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
-    curr = conn.cursor()
-    curr.execute("SELECT crpNPCCorporations.corporationID, invNames.itemName, chrFactions.factionName, "
-                 "chrFactions.factionID FROM crpNPCCorporations "
-                 "INNER JOIN chrFactions ON chrFactions.factionID = crpNPCCorporations.factionID "
-                 "INNER JOIN invNames ON invNames.itemID = crpNPCCorporations.corporationID "
-                 "WHERE chrFactions.factionName = \"{fc}\";".
-                format(fc=faction))  # Thukker Tribe
-    print (curr.fetchall())
-
-# select all corps for faction ID
-
-def corpsFromFactionid(faction):
-    conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
-    curr = conn.cursor()
-    curr.execute("SELECT crpNPCCorporations.corporationID, invNames.itemName, chrFactions.factionName, "
-                 "chrFactions.factionID FROM crpNPCCorporations "
-                 "INNER JOIN chrFactions ON chrFactions.factionID = crpNPCCorporations.factionID "
-                 "INNER JOIN invNames ON invNames.itemID = crpNPCCorporations.corporationID "
-                 "WHERE chrFactions.factionID = {fc};".
-                 format(fc=faction))  # 500015
-    return (curr.fetchall())
-
-# find station owner from sytemID
-
-def stationOwnsersFromSystemID(sysID):
-    conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
-    curr = conn.cursor()
-    curr.execute("SELECT stationID, corporationID, solarSystemID FROM staStations WHERE solarSystemID = {id}".
-                 format(id=sysID))
-    return (curr.fetchall())
-
-def stationOwnserFromStationID(sysID):
-    conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
-    curr = conn.cursor()
-    curr.execute("SELECT stationID, corporationID, solarSystemID FROM staStations WHERE stationID = {id}".
-                 format(id=sysID))
-    x = curr.fetchall()
-    if len(x) == 1:
-        return x
-    else:
-        print ("stationOwnserFromStationID returned more than 1 result", sysID, x)
-
-''' find BP ID from item name
-select industryActivityProducts.typeID, (select invTypes.typeName from invTypes where invTypes.typeID =  industryActivityProducts.typeID)
-from invTypes
-inner join industryActivityProducts
-on industryActivityProducts.productTypeID = invTypes.typeID
-where industryActivityProducts.productTypeID = (SELECT typeID from invTypes where typeName = 'Anathema')
-'''
-def findBpIdFromName(itemName):
-    curr.execute("SELECT invTypes.typeName " 
-                 "FROM invTypes "
-                 "INNER JOIN industryActivityProducts "
-                 "ON industryActivityProducts.productTypeID = invTypes.typeID "
-                 "WHERE industryActivityProducts.productTypeID = (SELECT typeID from invTypes where typeName = \"{nm}\")".
-                 format(nm=itemName))
-    print (curr.fetchone())
-
-findBpIdFromName("Anathema")
-
-
-''' find BP NAME from item name
-select invTypes.typeName
-from invTypes
-inner join industryActivityProducts
-on industryActivityProducts.productTypeID = invTypes.typeID
-where industryActivityProducts.productTypeID = (SELECT typeID from invTypes where typeName = 'Anathema')
-'''
-def findBpNameFromName(itemName):
-    curr.execute("SELECT industryActivityProducts.typeID, "
-                 "(select invTypes.typeName from invTypes where invTypes.typeID =  industryActivityProducts.typeID) "
-                 "from invTypes "
-                 "inner join industryActivityProducts "
-                 "on industryActivityProducts.productTypeID = invTypes.typeID "
-                 "where industryActivityProducts.productTypeID = (SELECT typeID from invTypes where typeName = \"{n}\")".
-                 format(n=itemName))
-    return curr.fetchone()[0]
-
-''' find BP from item type
-select typeID from industryActivityProducts where productTypeID = 969;
-'''
-def findBpFromID(itemID):
-    curr.execute("SELECT typeID FROM industryActivityProducts "
-                 "WHERE productTypeID = {id}".
-                 format(id=itemID))
-    print (curr.fetchone())
+        t = (5.0 - (0.75 * findEStandingBest()))
+        return  (1 - t)
     
-# findBpFromID(624) 
+def findEStandingBest():
+    # b = base standing    
+    b = firstGo.getStandingName("Flicky G", "Republic Fleet")
+    #s = diplomacy skil
+    s = ALL_CHARS["Flicky G"]["Diplomacy"]
+    # E = 10 - (10-B) x (1 - 0.04 x S)
+    st = 10 - (10 - b) * (1 - 0.04 * s)
+    return st
 
-''' build from blueprint
-select invTypes.typeName, industryActivityMaterials.quantity, invTypes.typeID
-from invTypes
-INNER JOIN industryActivityMaterials
-ON  industryActivityMaterials.materialTypeID = invTypes.typeID
-WHERE industryActivityMaterials.typeID = 969 AND activityID = 1;
-'''
-def matsForBp(bpID):
-    mats = {}
-    curr.execute("SELECT invTypes.typeID, industryActivityMaterials.quantity "
-                 "FROM invTypes "
-                 "INNER JOIN industryActivityMaterials "
-                 "ON  industryActivityMaterials.materialTypeID = invTypes.typeID "
-                 "WHERE industryActivityMaterials.typeID = {id} AND activityID = 1".
-                 format(id=bpID))
-    x = (curr.fetchall())
-    for y in x:
-        mats[y[0]] = y[1]
-    return mats
+def reprocModuleBest():
+    #station equipment
+    #station tax
+    #scrapmetal skill
+    sk = (1 + ALL_CHARS["Flicky G"]["Scrapmetal Processing"] * 0.02)
+    e = getReprocModuleE(60004516)
+    st = findStandingTax()
+    #find correct formula
+    return (sk*e*st)
 
-# station services from station id
-'''
-SELECT staServices.serviceName from staServices
-INNER JOIN staOperationServices ON staOperationServices.serviceID = staServices.serviceID 
-INNER JOIN staStations ON staStations.operationID = staOperationServices.operationID
-WHERE staStations.stationID = 60004516
-'''
-
+def getReprocModuleE(stationID):
+    curr.execute("SELECT staStations.reprocessingEfficiency, invNames.itemName FROM staStations "
+                    "INNER JOIN invNames ON staStations.stationID = invNames.itemID "
+                    "WHERE staStations.stationID = {id};".
+                    format(id = stationID))
+    efficiency  = curr.fetchone()[0] 
+    return efficiency
 
 ########################
 # Eve Market API Calls
@@ -526,6 +290,7 @@ def nowValueJita(interestingItem):
     systemID = 30000142
     marketStatUrl = "http://api.eve-central.com/api/marketstat/json?usesystem=" + str(systemID) + "&typeid=" + str(interestingItem)
     # print marketStatUrl
+    print 
     resp = s.get(url=marketStatUrl)
     # print resp.text
     data = json.loads(resp.text)
@@ -591,5 +356,24 @@ def findT1Items():
 print (nowValueJita(34))
 
 
+##########
+
+# Start Processing Data
+##########
+
+corp = cachedApi.auth(keyID=1383071, vCode="m0ecx5e1r8RCMsizNKXyB91HQchkHjJmNJlG8or0xy3VvkpiAJj1J7wXb70lUMm0").corporation(98436502)
+corpTransactions  = corp.WalletTransactions()
+for x in corpTransactions.transactions:
+    print (x)
+    
+corpJournal = corp.WalletJournal()
+for x in corpJournal.entries:
+    print (x)
+
+corpAssets = corp.AssetList().assets
+for x in corpAssets:
+    print (x)
+    
+createCorpAssetsTable(corpAssets)
 
 # conn.close()

@@ -8,6 +8,7 @@ import untangle
 import json, requests, pprint
 #import eveSQL
 import eveSQL.firstGo as firstGo
+from eveSQL.SDEQueries import SDEQueries
 #from docutils.parsers.rst.directives import parts
 
 
@@ -16,12 +17,13 @@ import eveSQL.firstGo as firstGo
 conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
 curr = conn.cursor()
 
+queries = SDEQueries()
 
 ALL_CHARS = firstGo.getAllCharacters()
 
 
 
-mats =  (firstGo.matsForBp(firstGo.findBpNameFromName("Armor EM Hardener I")))
+mats =  (queries.matsForBp(queries.findBpNameFromName("Armor EM Hardener I")))
 amount = 0 
 for key, value in mats.iteritems():
    print (key, value)
@@ -41,30 +43,33 @@ x (1 + Ore Processing skill x 0.02) )'''
 #oreProcSkill
 
 
+firstGo.createCorpAssetsTable(assets)
 
-    
-def findEStandingBest():
-    # b = base standing    
-    b = firstGo.getStandingName("Flicky G", "Republic Fleet")
-    #s = diplomacy skil
-    s = ALL_CHARS["Flicky G"]["Diplomacy"]
-    # E = 10 - (10-B) x (1 - 0.04 x S)
-    st = 10 - (10 - b) * (1 - 0.04 * s)
-    return st
-
-findEStandingBest()
-
-def reprocModuleBest():
-    #station equipment
-    #station tax
-    #scrapmetal skill
-    s = ALL_CHARS["Flicky G"]["Scrapmetal Processing"]
-    pass
+def getSystemIDFromStation(stationID):
+    conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
+    ss = conn.cursor()
+    ss.execute("SELECT solarSystemID from staStations where stationID = {id}".
+                 format(id  = stationID))
+    s = ss.fetchone()[0]
+    return s
 
 
-SELECT staStations.reprocessingEfficiency, inNames.itemName FROM staStations
-INNER JOIN invNames ON staStations.stationID = invNames.itemID
-WHERE staStations.stationsID = 
+ 
+
+def itemPrices():
+    total = 0
+    curr.execute('SELECT typeid, locationid FROM corpassets;')
+    for x in curr.fetchall():    
+        theyBuy = firstGo.nowValue(getSystemIDFromStation(x[1]), x[0])[0]
+        theySell = firstGo.nowValue(getSystemIDFromStation(x[1]), x[0])[1]
+        print (firstGo.getSystemName(getSystemIDFromStation(x[1])), firstGo.getItemName(x[0]), theyBuy, theySell)
+
+#Station Equipment x (1 + Refining skill x 0.03) x (1 + Refining Efficiency skill x 0.02) x (1 + Ore Processing skill x 0.02) )
+
+#[(60004516, 1000047, 30002053), (60005236, 1000055, 30002053), (60005686, 1000057, 30002053), (60011287, 1000111, 30002053), (60015140, 1000182, 30002053)]
+#NEW MATH --> Station Equipment x (1 + Refining skill x 0.03) x (1 + Refining Efficiency skill x 0.02) x (1 + Ore Processing skill x 0.02) 
+
+
 
 
 #find blueprints in assets and calculate profite
