@@ -7,7 +7,7 @@ import sqlite3, sys
 
 class SDEQueries(object):
     def __init__(self):
-        self.conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
+        self.conn = sqlite3.connect("/Users/adam.green/Documents/personal-workspace/eve-project/sqlite-latest.sqlite")
         self.curr = self.conn.cursor()
 
     def getItemID(self, interestingItem):
@@ -524,8 +524,13 @@ class SDEQueries(object):
                 format(id = catagories[0]))            
             catagories = self.curr.fetchall()
             for subCatagories in catagories:
-                some items apear here
                 print (">", subCatagories[1])
+                self.curr.execute("SELECT typeID, typeName FROM invTypes "
+                                  "WHERE marketGroupID = {id}".
+                                  format(id = subCatagories[0]))
+                items = self.curr.fetchall()
+                for x in items:
+                    print ("*", x[1])
                 self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
                 "WHERE parentGroupID = {id} "
                 "ORDER BY marketGroupName".
@@ -533,6 +538,12 @@ class SDEQueries(object):
                 groups = self.curr.fetchall()
                 for subGroup in groups:
                     print (">>", subGroup[1])
+                    self.curr.execute("SELECT typeID, typeName FROM invTypes "
+                                      "WHERE marketGroupID = {id}".
+                                      format(id = subGroup[0]))
+                    items = self.curr.fetchall()
+                    for x in items:
+                        print ("*", x[1])
                     self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
                                       "WHERE parentGroupID = {id} "
                                       "ORDER BY marketGroupName".
@@ -540,6 +551,12 @@ class SDEQueries(object):
                     x = self.curr.fetchall()
                     for xx in x:
                         print (">>>", xx[1])
+                        self.curr.execute("SELECT typeID, typeName FROM invTypes "
+                                          "WHERE marketGroupID = {id}".
+                                          format(id = xx[0]))
+                        items = self.curr.fetchall()
+                        for x in items:
+                            print ("*", x[1])
                         self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
                                       "WHERE parentGroupID = {id} "
                                       "ORDER BY marketGroupName".
@@ -547,7 +564,12 @@ class SDEQueries(object):
                         y = self.curr.fetchall()
                         for yy in y:
                             print (">>>>", yy[1])
-                       
+                            self.curr.execute("SELECT typeID, typeName FROM invTypes "
+                                             "WHERE marketGroupID = {id}".
+                                             format(id = xx[0]))
+                            items = self.curr.fetchall()
+                            for x in items:
+                                print ("*", x[1])
         return marketRoot
 
                 

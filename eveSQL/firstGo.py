@@ -58,7 +58,7 @@ REPROC_SKILLS = ["Arkonor Processing", "Astrogeology", "Bistot Processing", "Cro
 
 
 # Test PSQL connectivity
-conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
+conn = sqlite3.connect("/Users/adam.green/Documents/personal-workspace/eve-project/sqlite-latest.sqlite")
 curr = conn.cursor()
 
 ##########################
