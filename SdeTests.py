@@ -497,9 +497,6 @@ class test_turn_item_name_into_mats(unittest.TestCase):
         self.assertEqual(idee, 11188, "item id isn't right")
         self.assertEqual(bp, 11189, "item bp id isn't right")
 
-class test_system_aspects(self):
-    self.queries SDEQueries()
-    def 
 
 if __name__ == '__main__':
     ''''y = SDEQueries()
