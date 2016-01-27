@@ -210,8 +210,12 @@ class SDEQueries(object):
     
     
     '''
-    # get corp name from corp id
+    
     def getCorpID(self, corpID):
+        """ Returns an integer corresponding to the corporations ID when passed
+            a string representation of that corporation.
+            E.G. getCorpID("Acme Corp") returns 123456
+            """
         try:
             assert type(corpID) is type(""), "requires a string"
         except:
@@ -233,6 +237,10 @@ class SDEQueries(object):
         return x[0]
 
     def getCorpName(self, corpID):
+        """ Returns the string representation of a corp when passed the 
+            corporation ID integer
+            E.G. getCorpName(123456) returns "Acme Corp"
+        """
         try:
             assert type(corpID) is int, "requires a int"
         except:
@@ -251,11 +259,12 @@ class SDEQueries(object):
             raise
             sys.exit(0) 
         return x[0].encode("ascii", "ignore")
-    
         
-    # select faction details from corp name
-    
     def getFactionNameFromCorpName(self, corp):
+        """ Returns the string representation of a Faction when passed the 
+            string representation of a member corp 
+            E.G. getFactionNameFromCorpName("Thukker Mix") returns "Thukker Tribe"
+        """
         try:
             assert type(corp) is type(""), "requires a int"
         except:
@@ -280,16 +289,22 @@ class SDEQueries(object):
     
     # select faction from corp id
     def getFactionNameFromCorpID(self, corpID):
+        """ Returns the string representation of a Faction when passed the 
+            integer representation of a member corp 
+            E.G. getFactionNameFromCorpID(654321) returns "Thukker Tribe"
+        """
         try:
             assert type(corpID) is int, "requires a int"
         except:
-            print ("you passed getSystemID something that wasn't a int")
+            print ("you passed getFactionNameFromCorpID something that wasn't a int")
             raise
             sys.exit(0)
         self.curr.execute("SELECT chrFactions.factionName "
                      "FROM chrFactions "
-                     "INNER JOIN crpNPCCorporations ON crpNPCCorporations.factionID = chrFactions.factionID "
-                     "INNER JOIN invNames ON invNames.itemID = crpNPCCorporations.corporationID "
+                     "INNER JOIN crpNPCCorporations "
+                     "ON crpNPCCorporations.factionID = chrFactions.factionID "
+                     "INNER JOIN invNames "
+                     "ON invNames.itemID = crpNPCCorporations.corporationID "
                      "WHERE invNames.itemID = {cp}; ".
                      format(cp=corpID))  # 1000160
         x = self.curr.fetchone()
@@ -297,7 +312,8 @@ class SDEQueries(object):
             print ("x is ", x, type(x))
             assert type(x) != type(None), "corpID should not return a none"
         except:
-            print ("getSystemID didn't find what you were looking for and returned a None")
+            print ("getSystemID didn't find what you were looking for and "
+                   "returned a None")
             raise
             sys.exit(0) 
         return x[0].encode("ascii", "ignore")      
@@ -305,10 +321,14 @@ class SDEQueries(object):
     
     # select all corps for faction name
     def getCorpsFromFactionName(self, faction):
+        """ Returns a list of integer corporation IDs when passed the string
+            string representation of a Faction 
+            E.G. getCorpsFromFactionName("Thukker Tribe") returns [123456, 1234567]
+        """        
         try:
             assert type(faction) is str, "requires a string"
         except:
-            print ("you passed getSystemID something that wasn't a string")
+            print ("you passed getCorpsFromFactionName something that wasn't a string")
             raise
         self.curr.execute("SELECT crpNPCCorporations.corporationID FROM crpNPCCorporations "
                      "INNER JOIN chrFactions ON chrFactions.factionID = crpNPCCorporations.factionID "
@@ -325,11 +345,12 @@ class SDEQueries(object):
             raise
             sys.exit(0)
         return x
-            
-    
-    # select all corps for faction ID
     
     def getCorpsFromFactionID(self, faction):
+        """ Returns a list of integer corporation IDs when passed the string
+            string representation of a Faction 
+            E.G. getCorpsFromFactionID(987654) returns [123456, 1234567]
+        """
         try:
             assert type(faction) is int, "requires a int"
         except:
@@ -337,8 +358,10 @@ class SDEQueries(object):
             raise
         self.curr.execute("SELECT crpNPCCorporations.corporationID "
                      "FROM crpNPCCorporations "
-                     "INNER JOIN chrFactions ON chrFactions.factionID = crpNPCCorporations.factionID "
-                     "INNER JOIN invNames ON invNames.itemID = crpNPCCorporations.corporationID "
+                     "INNER JOIN chrFactions "
+                     "ON chrFactions.factionID = crpNPCCorporations.factionID "
+                     "INNER JOIN invNames "
+                     "ON invNames.itemID = crpNPCCorporations.corporationID "
                      "WHERE chrFactions.factionID = {fc};".
                      format(fc=faction))  # 500015
         x = self.curr.fetchall()
@@ -351,16 +374,19 @@ class SDEQueries(object):
             raise
             sys.exit(0)
         return x
-    
-    # find station owner from sytemID
-    
+
     def getStationOwnersFromSystemID(self, sysID):
+        """ Returns a integer list of all the corporation which own a station in
+            the solar system, when the solarsystem is given as a int
+            E.G. getStationOwnersFromSystemID(30001) returns [123456, 1234567]
+            """
         try:
-            assert type(sysID) is int, "requires a int"
+            assert type(sysID) is int, "requires an int"
         except:
             print ("you passed getSystemID something that wasn't a int")
             raise
-        self.curr.execute("SELECT corporationID FROM staStations WHERE solarSystemID = {id}".
+        self.curr.execute("SELECT corporationID FROM staStations "
+                        "WHERE solarSystemID = {id}".
                      format(id=sysID))
         x =self.curr.fetchall()
         try:
@@ -375,6 +401,10 @@ class SDEQueries(object):
         
     
     def getStationOwnerFromStationID(self, sysID):
+        """ Returns a single integer for the corporation which owns  the station
+            given by the station ID, which is also a int
+            E.G. getStationOwnerFromStationID(9998789) returns 123456
+            """        
         try:
             assert type(sysID) is int, "requires a int"
         except:
@@ -408,7 +438,8 @@ class SDEQueries(object):
                      "FROM invTypes "
                      "INNER JOIN industryActivityProducts "
                      "ON industryActivityProducts.productTypeID = invTypes.typeID "
-                     "WHERE industryActivityProducts.productTypeID = (SELECT typeID from invTypes where typeName = \"{nm}\")".
+                     "WHERE industryActivityProducts.productTypeID = "
+                     "(SELECT typeID from invTypes where typeName = \"{nm}\")".
                      format(nm=itemName))
         x = self.curr.fetchone()
         try:
@@ -505,13 +536,44 @@ class SDEQueries(object):
         return mats
     
     # station services from station id
+   
+    def getItemsFromGroupID(self, id):
+        print (">", id)
+        self.curr.execute("SELECT typeID, typeName FROM invTypes "
+                            "WHERE marketGroupID = {id}".
+                            format(id = id))
+        items = self.curr.fetchall()
+        for x in items:
+            print ("*", x[1])
+   
+    def getRootMarketGroups(self):
+        values = []
+        self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
+                     "WHERE parentGroupID is Null "
+                     "ORDER BY marketGroupName")
+        marketRoot = self.curr.fetchall()
+        for x in marketRoot:
+            values.append(x[0])
+        return values
+    
+    def getChildsFromMarketGroupID(self, id="Null"):
+            self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
+                "WHERE parentGroupID = {id} "
+                "ORDER BY marketGroupName".
+                format(id = id))
+            parents = self.curr.fetchall()
+            for x in parents:
+                print x
+                self.getItemsFromGroupID(x[0])
+                self.getChildsFromMarketGroupID(x[0])
+    
     '''
     SELECT staServices.serviceName from staServices
     INNER JOIN staOperationServices ON staOperationServices.serviceID = staServices.serviceID 
     INNER JOIN staStations ON staStations.operationID = staOperationServices.operationID
     WHERE staStations.stationID = 60004516
     '''
-    def getParentMarketGroups(self):
+    def getAllMarketGroups(self):
         self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
                      "WHERE parentGroupID is Null "
                      "ORDER BY marketGroupName")
@@ -579,7 +641,15 @@ class SDEQueries(object):
 
 
 queries = SDEQueries()
-x = queries.getParentMarketGroups()
+
+
+#x = queries.getAllMarketGroups()
+
+
+#for y in x:
+#    queries.getChildsFromMarketGroupID(y)
+
+
 
 '''
 print (queries.getItemName(13))
