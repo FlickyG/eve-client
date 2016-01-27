@@ -7,7 +7,7 @@ import sqlite3, sys
 
 class SDEQueries(object):
     def __init__(self):
-        self.conn = sqlite3.connect("/Users/adam.green/Documents/personal-workspace/eve-project/sqlite-latest.sqlite")
+        self.conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
         self.curr = self.conn.cursor()
 
     def getItemID(self, interestingItem):
@@ -511,7 +511,7 @@ class SDEQueries(object):
     INNER JOIN staStations ON staStations.operationID = staOperationServices.operationID
     WHERE staStations.stationID = 60004516
     '''
-    def getParentMarketGroups(self):
+    def getAllMarketGroups(self):
         self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
                      "WHERE parentGroupID is Null "
                      "ORDER BY marketGroupName")
@@ -579,7 +579,7 @@ class SDEQueries(object):
 
 
 queries = SDEQueries()
-x = queries.getParentMarketGroups()
+x = queries.getAllMarketGroups()
 
 '''
 print (queries.getItemName(13))
