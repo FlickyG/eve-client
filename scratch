@@ -5,3 +5,24 @@ Station ID 60000004
 item Name Anathema
 item Id  = 11188
 bp item id = 11189
+
+
+sqlite> .schema invMetaTypes
+CREATE TABLE "invMetaTypes" (
+  "typeID" integer NOT NULL,
+  "parentTypeID" integer DEFAULT NULL,
+  "metaGroupID" integer DEFAULT NULL,
+  PRIMARY KEY ("typeID")
+);
+
+
+select * from invmetaGroups limit 10;
+select * from invMetaTypes limit 10;
+
+
+# select t2 items
+SELECT typeName from invTypes
+JOIN  invMetaTypes
+ON invMetaTypes.typeID = invTypes.typeID
+
+
