@@ -7,7 +7,7 @@ import sqlite3, sys
 
 class SDEQueries(object):
     def __init__(self):
-        self.conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
+        self.conn = sqlite3.connect("/Users/adam.green/Documents/personal-workspace/eve-project/sqlite-latest.sqlite")
         self.curr = self.conn.cursor()
 
     def getItemID(self, interestingItem):
@@ -640,9 +640,9 @@ class SDEQueries(object):
 
 
 
-queries = SDEQueries()
+#queries = SDEQueries()
 
-x = queries.getAllMarketGroups()
+#x = queries.getAllMarketGroups()
 
 
 #x = queries.getAllMarketGroups()
