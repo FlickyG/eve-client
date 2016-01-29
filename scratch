@@ -24,5 +24,6 @@ select * from invMetaTypes limit 10;
 SELECT typeName from invTypes
 JOIN  invMetaTypes
 ON invMetaTypes.typeID = invTypes.typeID
+WHERE invMetaTypes.metaGroupID = 2
 
-
+# select medium sized modules

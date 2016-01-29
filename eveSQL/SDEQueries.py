@@ -7,7 +7,7 @@ import sqlite3, sys
 
 class SDEQueries(object):
     def __init__(self):
-        self.conn = sqlite3.connect("/Users/adam.green/Documents/personal-workspace/eve-project/sqlite-latest.sqlite")
+        self.conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
         self.curr = self.conn.cursor()
 
     def getItemID(self, interestingItem):
@@ -563,7 +563,7 @@ class SDEQueries(object):
                 format(id = id))
             parents = self.curr.fetchall()
             for x in parents:
-                print x
+                print (x)
                 self.getItemsFromGroupID(x[0])
                 self.getChildsFromMarketGroupID(x[0])
     
@@ -640,7 +640,13 @@ class SDEQueries(object):
 
 
 
-#queries = SDEQueries()
+queries = SDEQueries()
+print (queries.getBpFromID(451))
+x = queries.getItemID("Alumel Gravimetric ECCM Sensor Array I")
+print (queries.matsForBp(queries.getBpFromID(x)))
+
+
+   
 
 #x = queries.getAllMarketGroups()
 
@@ -648,13 +654,8 @@ class SDEQueries(object):
 #x = queries.getAllMarketGroups()
 
 
-#for y in x:
-#    queries.getChildsFromMarketGroupID(y)
 
-
-
-
-'''
+"""
 print (queries.getItemName(13))
 print (queries.getItemID(queries.getItemName(13)))
 
@@ -671,4 +672,4 @@ print ()
 
 for x in queries.corpsFromFactionid(500015):
     print (queries.corpFromID(x[0]))
-'''
+"""
