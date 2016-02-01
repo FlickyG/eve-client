@@ -17,6 +17,7 @@ import pickle
 import zlib
 import os
 from os.path import join, exists
+import sys
 
 
 # EVE API Stuff
@@ -58,7 +59,7 @@ REPROC_SKILLS = ["Arkonor Processing", "Astrogeology", "Bistot Processing", "Cro
 
 
 # Test PSQL connectivity
-conn = sqlite3.connect("/Users/adam.green/Documents/personal-workspace/eve-project/sqlite-latest.sqlite")
+conn = sqlite3.connect("/home/adam/workspace1/eve-client/eveSQL/eve.db")
 curr = conn.cursor()
 
 ##########################
@@ -141,8 +142,9 @@ class MyCacheHandler(object):  # for eve api calls
 
 cachedApi = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=True))
 
+MY_CHARACTERS = {}
+
 def getAllCharacters():
-    MY_CHARACTERS = {}
     # get the skill tree once, and reuse it for all characters
     skilltree = cachedApi.eve.SkillTree()
     # in case there are multiple accounts, or multiple keys
@@ -238,7 +240,7 @@ def findStandingTax():
     
 def findEStandingBest():
     # b = base standing    
-    b = firstGo.getStandingName("Flicky G", "Republic Fleet")
+    b = getStandingName("Flicky G", "Republic Fleet")
     #s = diplomacy skil
     s = ALL_CHARS["Flicky G"]["Diplomacy"]
     # E = 10 - (10-B) x (1 - 0.04 x S)
@@ -283,14 +285,12 @@ requests_cache.install_cache('wait_test')
 requests_cache.clear()
 s = requests_cache.CachedSession()
 s.hooks = {'response': make_throttle_hook(0.1)}
-s.get('http://httpbin.org/delay/get')
-s.get('http://httpbin.org/delay/get')
 
-def nowValueJita(interestingItem):
+
+def now_value_jita(interestingItem):
     systemID = 30000142
     marketStatUrl = "http://api.eve-central.com/api/marketstat/json?usesystem=" + str(systemID) + "&typeid=" + str(interestingItem)
     # print marketStatUrl
-    print 
     resp = s.get(url=marketStatUrl)
     # print resp.text
     data = json.loads(resp.text)
@@ -299,7 +299,7 @@ def nowValueJita(interestingItem):
     # print ("They Sell ", data[0]['sell']['min'])
     return data[0]['sell']['min']
         
-def nowValue(systemID, interestingItem):
+def now_value(systemID, interestingItem):
     marketStatUrl = "http://api.eve-central.com/api/marketstat/json?usesystem=" + str(systemID) + "&typeid=" + str(interestingItem)
     resp = s.get(url=marketStatUrl)
     # print resp.text
@@ -309,14 +309,14 @@ def nowValue(systemID, interestingItem):
     # print ("They Sell ", data[0]['sell']['min'])
     return (data[0]['buy']['max'], data[0]['sell']['min'])      
 
-def quickValueJita(interestingItem):
+def quick_value_jita(interestingItem):
     systemID = 30000142
     marketStatUrl = "http://api.eve-central.com/api/quicklook?usesystem=" + str(systemID) + "&typeid=" + str(interestingItem)
     resp = s.get(url=marketStatUrl)
     obj = untangle.parse(resp.text)
     return obj
 
-def createCorpAssetsTable(assets):
+def create_corp_asset_table(assets):
     curr.executescript('drop table if exists corpassets;')
     conn.execute("CREATE TABLE corpassets"
                 "(itemid INT PRIMARY KEY  NOT NULL,"
@@ -338,29 +338,37 @@ def createCorpAssetsTable(assets):
                             vii=x["itemID"], vli=x["locationID"], vti=x["typeID"], vq=x["quantity"], vf=x["flag"], vs=x["singleton"]))
     conn.commit()
     
-def getValueCorpAssets():
+def get_value_corp_assets():
     total = 0
     curr.execute('SELECT typeid FROM corpassets;')
     for x in curr.fetchall():
-        total = total + nowValue(30000142, x[0])[1]
-        # print ("fetching",x[0])
+        total = total + now_value(30000142, x[0])[1]
         # print (nowValue(30000142, x[0])[1])
     print ("Value of all corp assets if put into iSell orders in Jita:", total)
 
-def findT1Items():
+def find_t1_items():
     # select set of primary keys in invTypesMaterials
     # for every row in set
     # if x[1] in x[0]
     pass
 
-print (nowValueJita(34))
+
+
+
+def main():
+    pass
+    #print (now_value_jita(34))
+
+
+if __name__ == "__main__":
+    sys.exit(main())
 
 
 ##########
 
 # Start Processing Data
 ##########
-
+"""
 corp = cachedApi.auth(keyID=1383071, vCode="m0ecx5e1r8RCMsizNKXyB91HQchkHjJmNJlG8or0xy3VvkpiAJj1J7wXb70lUMm0").corporation(98436502)
 corpTransactions  = corp.WalletTransactions()
 for x in corpTransactions.transactions:
@@ -375,5 +383,5 @@ for x in corpAssets:
     print (x)
     
 createCorpAssetsTable(corpAssets)
-
+"""
 # conn.close()

@@ -5,13 +5,22 @@ Created on 22 Jan 2016
 '''
 import sqlite3, sys
 
+from sqlite3 import OperationalError
+
+
 class SDEQueries(object):
     def __init__(self):
-        self.conn = sqlite3.connect("/home/adam/Documents/eve/native/eve.db")
-        self.curr = self.conn.cursor()
+        try:
+            location1 = "/home/adam/Documents/eve/native/eve.db"
+            self.conn = sqlite3.connect(location1)
+            self.curr = self.conn.cursor()
+        except sqlite3.OperationalError:
+            print ("couldn't open the data base at %s" % (location1) )
+            raise
+
 
     def getItemID(self, interestingItem):
-        """ reurns the item ID when passed a string represtning ther item's Name
+        """ returns the item ID when passed a string represtning ther item's Name
             
         """
         # Check input is a string
@@ -128,6 +137,29 @@ class SDEQueries(object):
             sys.exit(0) 
         y = x[1]
         return y
+
+    
+    def get_system_from_station_ID(self, stationID):
+        ''' Returns system id as an integer when passed a station ID
+        '''
+        #check input is a string
+        try:
+            assert type(stationID) is int, "requires a int"
+        except:
+            print ("you passed get_system_from_station_ID something that wasn't a int")
+            raise
+            sys.exit(0)
+        query = "select solarSystemID from staStations where stationsID = {id}".format(id = stationID) 
+        self.curr.execute("select solarSystemID from staStations where stationID = {id}".format(id = stationID))    
+        x = self.curr.fetchone()
+        try:
+            assert x != type(None), "should not return a none"
+        except:
+            print ("get_system_from_station_ID didn't find what you were looking for and returned a None")
+            raise
+            sys.exit(0) 
+        y = x[0]
+        return y    
     
     def getSystemName(self, interestingSystem):
         ''' Returns system name as a string when passed the system id as an integer
@@ -535,6 +567,30 @@ class SDEQueries(object):
             mats[y[0]] = y[1]
         return mats
     
+    def getReprocOutput(self, itemID):
+        """ returns a dictionary of the materials obtained when recycling a module etc
+            Accepts a integer, as the itemID as input
+         """
+        try:
+            assert type(itemID) is int, "getReprocOutput accepts only integers"
+        except:
+            print ("you passed getReprocOutput something unexpected") 
+        mats = {}
+        self.curr.execute("SELECT materialTypeID, quantity "
+                          "from invTypeMaterials "
+                          "where typeID = {id}".
+                          format(id = itemID))
+        x = self.curr.fetchall()
+        mats = {}
+        try:
+            assert type(x) != type(None), "Requires a list not a none"
+        except:
+            print ("getReprocOutput returned something unexpected")
+            raise
+            sys.exit(0)
+        for keys, values in x:
+            mats[keys] = values
+        return mats        
     # station services from station id
    
     def getItemsFromGroupID(self, id):
@@ -604,8 +660,8 @@ class SDEQueries(object):
                                       "WHERE marketGroupID = {id}".
                                       format(id = subGroup[0]))
                     items = self.curr.fetchall()
-                    for x in items:
-                        print ("*", x[1])
+                    #for x in items:
+                        #print ("*", x[1])
                     self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
                                       "WHERE parentGroupID = {id} "
                                       "ORDER BY marketGroupName".
@@ -617,8 +673,8 @@ class SDEQueries(object):
                                           "WHERE marketGroupID = {id}".
                                           format(id = xx[0]))
                         items = self.curr.fetchall()
-                        for x in items:
-                            print ("*", x[1])
+                        #for x in items:
+                           # print ("*", x[1])
                         self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
                                       "WHERE parentGroupID = {id} "
                                       "ORDER BY marketGroupName".
@@ -630,22 +686,86 @@ class SDEQueries(object):
                                              "WHERE marketGroupID = {id}".
                                              format(id = xx[0]))
                             items = self.curr.fetchall()
-                            for x in items:
-                                print ("*", x[1])
+                            #for x in items:
+                                #print ("*", x[1])
         return marketRoot
+    
+    def purge_inv_types(self):
+        location1 = "/home/adam/Documents/eve/native/eve.db"
+        conn = sqlite3.connect(location1)
+        curr = conn.cursor()
+        curr.execute("SELECT typeID, typeName FROM invTypes")
+        x = curr.fetchall()
+        for y in x:
+            print (y)
+            
+    def find_low_slots(self):
+        self.curr.execute("SELECT dgmTypeEffects.typeID "
+                          "FROM dgmTypeEffects "
+                          "JOIN dgmEffects " 
+                          "ON dgmTypeEffects.effectID = dgmEffects.effectID "
+                          "WHERE dgmTypeEffects.effectID = 11")
+        x = self.curr.fetchall()
+        for y in x:
+            print (y[0])
 
-                
+
+    def find_med_slots(self):
+        self.curr.execute("SELECT dgmTypeEffects.typeID "
+                          "FROM dgmTypeEffects "
+                          "JOIN dgmEffects " 
+                          "ON dgmTypeEffects.effectID = dgmEffects.effectID "
+                          "WHERE dgmTypeEffects.effectID = 13")
+        x = self.curr.fetchall()
+        for y in x:
+            print (y[0])               
         
+    def find_high_slots(self):
+        self.curr.execute("SELECT dgmTypeEffects.typeID "
+                          "FROM dgmTypeEffects "
+                          "JOIN dgmEffects " 
+                          "ON dgmTypeEffects.effectID = dgmEffects.effectID "
+                          "WHERE dgmTypeEffects.effectID = 12")
+        x = self.curr.fetchall()
+        for y in x:
+            print (y[0])
+            
+    def find_slot_size(self, id):
+        self.curr.execute("SELECT dgmTypeEffects.effectID "
+                          "FROM dgmTypeEffects "
+                          "WHERE dgmTypeEffects.typeID = {id} "
+                          "AND "
+                          "(dgmTypeEffects.effectID = 11 OR dgmTypeEffects.effectID = 12 "
+                          "OR dgmTypeEffects.effectID = 13)".
+                          format(id = id))
+        x = self.curr.fetchall()
+        for y in x:
+            print (y[0])
 
 
 
+def main():
+    queries = SDEQueries()
+    #queries.find_low_slots()
+    #queries.find_med_slots()
+    queries.find_high_slots()
+    queries.find_slot_size(1952)
 
-queries = SDEQueries()
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+"""
+queries.getAllMarketGroups()
+
 print (queries.getBpFromID(451))
+
 x = queries.getItemID("Alumel Gravimetric ECCM Sensor Array I")
-print (queries.matsForBp(queries.getBpFromID(x)))
+print (x)
 
+print (queries.getReprocOutput(x))
 
+"""
    
 
 #x = queries.getAllMarketGroups()

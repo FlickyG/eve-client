@@ -14,6 +14,8 @@ curr = conn.cursor()
 
 
 
+
+
 #nowValueJita(34)
 x = firstGo.quickValueJita(34)
 for y in x.evec_api.quicklook.sell_orders.order:

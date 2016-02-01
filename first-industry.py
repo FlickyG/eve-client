@@ -69,21 +69,3 @@ def itemPrices():
 #[(60004516, 1000047, 30002053), (60005236, 1000055, 30002053), (60005686, 1000057, 30002053), (60011287, 1000111, 30002053), (60015140, 1000182, 30002053)]
 #NEW MATH --> Station Equipment x (1 + Refining skill x 0.03) x (1 + Refining Efficiency skill x 0.02) x (1 + Ore Processing skill x 0.02) 
 
-
-
-
-#find blueprints in assets and calculate profite
-#compare jita prices against rens prices
-
-'''
-
-# get itemID from BlueprintId
-select productTypeID from  industryActivityProducts where typeID = 894;
-
-# reprocess from item ID
-select invTypes.typeName, invTypeMaterials.quantity, invTypes.typeID
-from invTypes
-INNER JOIN invTypeMaterials
-ON  invTypeMaterials.materialTypeID = invTypes.typeID
-WHERE invTypeMaterials.typeID = 11188;
-'''
