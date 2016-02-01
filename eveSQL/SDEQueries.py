@@ -3,12 +3,19 @@ Created on 22 Jan 2016
 
 @author: adam
 '''
-import sqlite3, sys
+import sqlite3, sys, datetime
+
+import logging
+
 
 from sqlite3 import OperationalError
 
 
 class SDEQueries(object):
+    """ Handles SQL calls to the Eve Online SDE held locally on this machine.
+        You may need to repoint the location of the sqlite3.connect statement
+        TDO - error hanfdling on this and option for CLI input
+    """
     def __init__(self):
         try:
             location1 = "/home/adam/Documents/eve/native/eve.db"
@@ -16,13 +23,19 @@ class SDEQueries(object):
             self.curr = self.conn.cursor()
         except sqlite3.OperationalError:
             print ("couldn't open the data base at %s" % (location1) )
-            raise
+        try:
+            self.conn = sqlite3.connect("/Users/adam.green/Documents/personal-workspace/eve-project/sqlite-latest.sqlite")
+            self.curr = self.conn.cursor()
+        except sqlite3.OperationalError:
+            print ("couldn't open the data base at %s" % (location1) )
 
 
     def getItemID(self, interestingItem):
         """ returns the item ID when passed a string represtning ther item's Name
             
         """
+        print (datetime.datetime.now())
+        #logging.warning(str(datetime.datetime.now()), "hello this is a warning")
         # Check input is a string
         try:
             assert type(interestingItem) is type(""), "requires a string"
@@ -63,7 +76,9 @@ class SDEQueries(object):
         try:
             assert x[1] != type(None)
         except:
-            print ("getItemID didn't find what you were looking for and returned a None")
+            print ("getItemID didn't find what you were looking for and returned"
+                   " a None",
+                   interestingItem)
             raise
             sys.exit(0)   
         return x[1].encode('ascii', 'ignore')
@@ -78,14 +93,16 @@ class SDEQueries(object):
             print ("you passed getRegionID somethig that wasn't a string")
             raise 
             sys.exit(0)
-        self.curr.execute("select regionName, regionID from mapRegions where regionName = \"{id}\"".
+        self.curr.execute("SELECT regionName, regionID FROM mapRegions" 
+                            " WHERE regionName = \"{id}\"".
                            format(id = str(interestingRegion)))
         x = self.curr.fetchone()
-        print (x)
+        # Check output makes sense
         try:
             assert x[1] != type(None), "requires not a none type"
         except:
-            print("getRegionID couldn't find what you were looking for and returned a NoneType")
+            print("getRegionID couldn't find what you were looking for and "
+                  "returned a NoneType")
             raise
         y = x[1] 
         return y
@@ -125,7 +142,8 @@ class SDEQueries(object):
             print ("you passed getSystemID something that wasn't a string")
             raise
             sys.exit(0)
-        query = "select regionID, solarSystemID, solarSystemName from mapSolarSystems where solarSystemName ="
+        query = "select regionID, solarSystemID, solarSystemName "\
+                " FROM mapSolarSystems WHERE solarSystemName ="
         strr = "\""
         self.curr.execute(strr.join([query, interestingSystem, ""]))    
         x = self.curr.fetchone()
@@ -174,7 +192,6 @@ class SDEQueries(object):
         self.curr.execute(strr.join([query, str(interestingSystem), ""]))    
         x = self.curr.fetchone()[2].encode('ascii', 'ignore')
         try:
-            print ("x is", x)
             assert x != type(None), "requires  the databse to return somethign that isn't a non type"
             assert type(x) == str, "requires string"
         except:
@@ -260,7 +277,6 @@ class SDEQueries(object):
                      format(id=corpID))
         x = self.curr.fetchone()
         try:
-            print ("x is ", x, type(x))
             assert type(x) != type(None), "corpID should not return a none"
         except:
             print ("getSystemID didn't find what you were looking for and returned a None")
@@ -311,7 +327,6 @@ class SDEQueries(object):
                      format(cp=corp))  # Thukker Mix
         x = self.curr.fetchone()
         try:
-            print ("x is ", type(x), x)
             assert type(x) != type(None), "corpID should not return a none"
         except:
             print ("getSystemID didn't find what you were looking for and returned a None")
@@ -341,7 +356,6 @@ class SDEQueries(object):
                      format(cp=corpID))  # 1000160
         x = self.curr.fetchone()
         try:
-            print ("x is ", x, type(x))
             assert type(x) != type(None), "corpID should not return a none"
         except:
             print ("getSystemID didn't find what you were looking for and "
@@ -752,8 +766,18 @@ def main():
     queries.find_slot_size(1952)
 
 
+
 if __name__ == "__main__":
     sys.exit(main())
+
+#queries = SDEQueries()
+
+#x = queries.getAllMarketGroups()
+
+queries = SDEQueries()
+queries.getItemID("Anathema")
+#x = queries.getAllMarketGroups()
+
 
 """
 queries.getAllMarketGroups()
