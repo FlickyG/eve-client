@@ -18,7 +18,7 @@ class test_getItemID(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -47,7 +47,7 @@ class test_getItemName(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -76,7 +76,7 @@ class test_getRegionID(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -103,7 +103,7 @@ class test_getRegionName(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -131,7 +131,7 @@ class test_getSystemID(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -158,7 +158,7 @@ class test_getSystemName(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -182,7 +182,7 @@ class test_getCorpID(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -207,7 +207,7 @@ class test_getCorpName(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -231,7 +231,7 @@ class test_getFactionNameFromCorpName(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -257,7 +257,7 @@ class test_getFactionNameFromCorpID(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -283,7 +283,7 @@ class test_getCorpsFromFactionName(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -308,7 +308,7 @@ class test_getCorpsFromFactionID(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -333,7 +333,7 @@ class test_getStationOwnersFromSystemID(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -359,7 +359,7 @@ class test_getStationOwnerFromSystemID(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -385,7 +385,7 @@ class test_getBpIdFromName(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -410,7 +410,7 @@ class test_getBpNameFromName(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -436,7 +436,7 @@ class test_getBpFromID(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -461,7 +461,7 @@ class test_matsForBp(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("tearing down")
+        pass
 
     def test_FOO(self):
         self.assertEqual('foo'.upper(), 'FOO')
@@ -486,7 +486,7 @@ class test_turn_item_name_into_mats(unittest.TestCase):
         self.queries = SDEQueries()
         
     def tearDown(self):
-        print ("Tearing Down")
+        pass
         
     def test_1_anathema(self):
         #    Anathema -> itemID -> bpID -> mats
