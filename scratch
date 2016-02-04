@@ -1,3 +1,33 @@
+# DELETE FROM invTypes WHERE typeID = 370488;
+# DELETE FROM invTypes WHERE typeID = 34417;
+# DELETE FROM invTypes WHERE typeID = 34421;
+#DELETE FROM invTypes WHERE typeID = 34422
+30952
+32371
+32372
+32383
+32398
+32407
+33041
+33046
+33048
+33864
+33865
+33866
+34425
+34426
+34429
+34430
+34431
+34433
+34434
+34435
+37889
+37892
+37894
+37895
+37893
+
 Solar System ID 30000145
 Faction Id 500001
 Faction Name Caldari State
@@ -5,6 +35,11 @@ Station ID 60000004
 item Name Anathema
 item Id  = 11188
 bp item id = 11189
+
+Punisher  = 597
+Limited Electron Blaster I = 7621
+MEDIUM INEFFICIENT ARMOR REPAIR UNIT = 4571
+Focused Medium Pulse Laser = 456
 
 
 sqlite> .schema invMetaTypes
@@ -27,3 +62,53 @@ ON invMetaTypes.typeID = invTypes.typeID
 WHERE invMetaTypes.metaGroupID = 2
 
 # select medium sized modules
+SELECT * from dgmTypeAttributes
+JOIN dgmAttributeTypes
+ON dgmTypeAttributes.attributeID = dgmAttributeTypes.attributeID
+WHERE dgmTypeAttributes.typeID = 7621
+AND (dgmAttributeTypes.attributeID = 12 OR dgmAttributeTypes.attributeID = 13 OR dgmAttributeTypes.attributeID = 14);
+
+
+SELECT * from dgmAttributeTypes WHERE (dgmAttributeTypes.attributeID = 12 OR dgmAttributeTypes.attributeID = 13 OR dgmAttributeTypes.attributeID = 14)
+
+#select reprocess materials, any item
+select materialTypeID, quantitiy from invTypeMaterials where typeID = 597;
+
+#mats for bp
+SELECT invTypes.typeID, industryActivityMaterials.quantity
+FROM invTypes
+INNER JOIN industryActivityMaterials
+ON  industryActivityMaterials.materialTypeID = invTypes.typeID
+WHERE industryActivityMaterials.typeID = 11189 AND activityID = 1
+
+#select slot size
+SELECT dgmTypeEffects.effectID, dgmEffects.effectName
+FROM dgmTypeEffects
+JOIN dgmEffects 
+ON dgmTypeEffects.effectID = dgmEffects.effectID
+WHERE dgmTypeEffects.typeID = 1952;
+
+
+#find crappy entries in invTypes
+
+def purge_inv_types():
+	location1 = "/home/adam/Documents/eve/native/eve.db"
+	conn = sqlite3.connect(location1)
+	curr = conn.cursor()
+	curr.execute("SELECT typeID, typeName FROM invTypes")
+	x = curr.fetchall()
+	for y in x:
+		print (y)
+	
+	
+#######
+
+CREATE TABLE corpassets
+(itemid INT PRIMARY KEY  NOT NULL,
+locationid     INT    NOT NULL,
+typeid    INT    NOT NULL,
+quantity    INT    NOT NULL,
+flag    INT    NOT NULL,
+singleton    INT    NOT NULL
+);
+	
