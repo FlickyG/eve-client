@@ -26,7 +26,7 @@ from eveSQL import firstGo
 import untangle, json, pprint, logging
 
 
-logging.basicConfig(filename='eve-client.log',level=logging.DEBUG)
+logging.basicConfig(filename='eve-first_transactions.log',level=logging.DEBUG)
 #Row(name:Flicky G,characterID:859818750,corporationName:Flicky G Corporation,corporationID:98436502,allianceID:0,allianceName:,factionID:0,factionName:)
 
 #'EVE API Stuff

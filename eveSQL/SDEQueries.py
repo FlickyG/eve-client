@@ -16,6 +16,8 @@ class SDEQueries(object):
         You may need to repoint the location of the sqlite3.connect statement
         TDO - error hanfdling on this and option for CLI input
     """
+    self.logging.basicConfig(filename='eve-first_transactions.log',level=logging.DEBUG)
+    
     def __init__(self):
         try:
             location1 = "/home/adam/Documents/eve/native/eve.db"
@@ -30,17 +32,17 @@ class SDEQueries(object):
             print ("couldn't open the data base at %s" % (location1) )
 
 
-    def getItemID(self, interestingItem):
+    def get_item_id(self, interestingItem):
         """ returns the item ID when passed a string represtning ther item's Name
             
         """
-        print (datetime.datetime.now())
         #logging.warning(str(datetime.datetime.now()), "hello this is a warning")
         # Check input is a string
         try:
             assert type(interestingItem) is type(""), "requires a string"
         except:
-            print ("you passed getItemID something that wasn't a string")
+            print ("you passed get_item_id something that wasn't a string {id}".
+                   format(id = interestingItem))
             raise
             sys.exit(0)
         query = "SELECT typeID, typeName FROM invTypes WHERE typeName = "
@@ -52,13 +54,13 @@ class SDEQueries(object):
         try:
             assert x[0] != type(None)
         except:
-            print ("getItemID didn't find what you were looking for and returned a None")
+            print ("get_item_id didn't find what you were looking for and returned a None")
             raise
             sys.exit(0)           
         y = x[0]
         return y
     
-    def getItemName(self, interestingItem):
+    def get_item_name(self, interestingItem):
         """ Returns the item's Name when passed it's integer representation
         """
         # Check input is a string
@@ -66,7 +68,7 @@ class SDEQueries(object):
             assert type(interestingItem) is int, "requires a integer"
             assert interestingItem > 0, "requires a integer"
         except:
-            print ("you passed getItemName something that wasn't an int")
+            print ("you passed get_item_name something that wasn't an int")
             raise
             sys.exit(0)
         query = "SELECT typeID, typeName FROM invTypes WHERE typeID = "
@@ -76,21 +78,21 @@ class SDEQueries(object):
         try:
             assert x[1] != type(None)
         except:
-            print ("getItemID didn't find what you were looking for and returned"
+            print ("get_item_name didn't find what you were looking for and returned"
                    " a None",
                    interestingItem)
             raise
             sys.exit(0)   
         return x[1].encode('ascii', 'ignore')
     
-    def getRegionID(self, interestingRegion):
+    def get_region_id(self, interestingRegion):
         ''' Returns the Region ID when given the string representation
         '''
         # check input is a string
         try:
             assert type(interestingRegion) is type(""), "requires a string"
         except:
-            print ("you passed getRegionID somethig that wasn't a string")
+            print ("you passed get_region_id somethig that wasn't a string")
             raise 
             sys.exit(0)
         self.curr.execute("SELECT regionName, regionID FROM mapRegions" 
@@ -101,20 +103,20 @@ class SDEQueries(object):
         try:
             assert x[1] != type(None), "requires not a none type"
         except:
-            print("getRegionID couldn't find what you were looking for and "
+            print("get_region_id couldn't find what you were looking for and "
                   "returned a NoneType")
             raise
         y = x[1] 
         return y
     
-    def getRegionName(self, interestingRegion):
+    def get_region_name(self, interestingRegion):
         ''' Returns Region Name when given a numerical ID
         '''
         #Check input is a int
         try:
             assert type(interestingRegion) is int, "requires a string"
         except:
-            print ("getRegionName requires an int")
+            print ("get_region_name requires an int")
             raise
             sys.exit(0)
         query = "select regionName, regionID from mapRegions where regionID = "
@@ -127,19 +129,19 @@ class SDEQueries(object):
             assert type(y) != type(None), "returned none"
         except:
             print ("type in regionName", x[0])
-            print ("getRegionName returned a non type") 
+            print ("get_region_name returned a non type") 
             raise
             sys.exit(0)
         return y
     
-    def getSystemID(self, interestingSystem):
+    def get_system_id(self, interestingSystem):
         ''' Returns system id as an integer when passed the region name as a string
         '''
         #check input is a string
         try:
             assert type(interestingSystem) is type(""), "requires a string"
         except:
-            print ("you passed getSystemID something that wasn't a string")
+            print ("you passed get_system_id something that wasn't a string")
             raise
             sys.exit(0)
         query = "select regionID, solarSystemID, solarSystemName "\
@@ -150,7 +152,7 @@ class SDEQueries(object):
         try:
             assert x != type(None), "should not return a none"
         except:
-            print ("getSystemID didn't find what you were looking for and returned a None")
+            print ("get_system_id didn't find what you were looking for and returned a None")
             raise
             sys.exit(0) 
         y = x[1]
@@ -179,13 +181,13 @@ class SDEQueries(object):
         y = x[0]
         return y    
     
-    def getSystemName(self, interestingSystem):
+    def get_system_name(self, interestingSystem):
         ''' Returns system name as a string when passed the system id as an integer
         '''
         try:
             assert type(interestingSystem) is int, "requires a int"
         except:
-            print ("you passed getSystemName something that wasn't a integer")
+            print ("you passed get_system_name something that wasn't a integer")
             raise
         query = "select regionID, solarSystemID, solarSystemName from mapSolarSystems where solarSystemID = "
         strr = "\""
@@ -260,7 +262,7 @@ class SDEQueries(object):
     
     '''
     
-    def getCorpID(self, corpID):
+    def get_corp_id(self, corpID):
         """ Returns an integer corresponding to the corporations ID when passed
             a string representation of that corporation.
             E.G. getCorpID("Acme Corp") returns 123456
@@ -268,7 +270,7 @@ class SDEQueries(object):
         try:
             assert type(corpID) is type(""), "requires a string"
         except:
-            print ("you passed getSystemID something that wasn't a string")
+            print ("you passed get_corp_id something that wasn't a string")
             raise
             sys.exit(0)
         self.curr.execute("SELECT invNames.itemID from invNames "
@@ -279,20 +281,20 @@ class SDEQueries(object):
         try:
             assert type(x) != type(None), "corpID should not return a none"
         except:
-            print ("getSystemID didn't find what you were looking for and returned a None")
+            print ("get_corp_id didn't find what you were looking for and returned a None")
             raise
             sys.exit(0) 
         return x[0]
 
-    def getCorpName(self, corpID):
+    def get_corp_name(self, corpID):
         """ Returns the string representation of a corp when passed the 
             corporation ID integer
-            E.G. getCorpName(123456) returns "Acme Corp"
+            E.G. get_corp_name(123456) returns "Acme Corp"
         """
         try:
             assert type(corpID) is int, "requires a int"
         except:
-            print ("you passed getSystemID something that wasn't a int")
+            print ("you passed get_corp_name something that wasn't a int")
             raise
             sys.exit(0)
         self.curr.execute("SELECT invNames.itemName from invNames "
@@ -303,20 +305,20 @@ class SDEQueries(object):
         try:
             assert type(x) != type(None), "corpID should not return a none"
         except:
-            print ("getSystemID didn't find what you were looking for and returned a None")
+            print ("get_corp_name didn't find what you were looking for and returned a None")
             raise
             sys.exit(0) 
         return x[0].encode("ascii", "ignore")
         
-    def getFactionNameFromCorpName(self, corp):
+    def get_faction_name_from_corp_name(self, corp):
         """ Returns the string representation of a Faction when passed the 
             string representation of a member corp 
-            E.G. getFactionNameFromCorpName("Thukker Mix") returns "Thukker Tribe"
+            E.G. get_faction_name_from_corp_name("Thukker Mix") returns "Thukker Tribe"
         """
         try:
             assert type(corp) is type(""), "requires a int"
         except:
-            print ("you passed getSystemID something that wasn't a int")
+            print ("you passed get_faction_name_from_corp_name something that wasn't a int")
             raise
             sys.exit(0)
         self.curr.execute("SELECT chrFactions.factionName "
@@ -329,16 +331,16 @@ class SDEQueries(object):
         try:
             assert type(x) != type(None), "corpID should not return a none"
         except:
-            print ("getSystemID didn't find what you were looking for and returned a None")
+            print ("get_faction_name_from_corp_name didn't find what you were looking for and returned a None")
             raise
             sys.exit(0) 
         return x[0].encode("ascii", "ignore")
     
     # select faction from corp id
-    def getFactionNameFromCorpID(self, corpID):
+    def get_faction_name_from_corp_id(self, corpID):
         """ Returns the string representation of a Faction when passed the 
             integer representation of a member corp 
-            E.G. getFactionNameFromCorpID(654321) returns "Thukker Tribe"
+            E.G. get_faction_name_from_corp_id(654321) returns "Thukker Tribe"
         """
         try:
             assert type(corpID) is int, "requires a int"
@@ -358,7 +360,7 @@ class SDEQueries(object):
         try:
             assert type(x) != type(None), "corpID should not return a none"
         except:
-            print ("getSystemID didn't find what you were looking for and "
+            print ("get_faction_name_from_corp_id didn't find what you were looking for and "
                    "returned a None")
             raise
             sys.exit(0) 
@@ -366,15 +368,15 @@ class SDEQueries(object):
     #chrFactions.factionID => for facrtionID      
     
     # select all corps for faction name
-    def getCorpsFromFactionName(self, faction):
+    def get_corps_from_faction_name(self, faction):
         """ Returns a list of integer corporation IDs when passed the string
             string representation of a Faction 
-            E.G. getCorpsFromFactionName("Thukker Tribe") returns [123456, 1234567]
+            E.G. get_corps_from_faction_name("Thukker Tribe") returns [123456, 1234567]
         """        
         try:
             assert type(faction) is str, "requires a string"
         except:
-            print ("you passed getCorpsFromFactionName something that wasn't a string")
+            print ("you passed get_corps_from_faction_name something that wasn't a string")
             raise
         self.curr.execute("SELECT crpNPCCorporations.corporationID FROM crpNPCCorporations "
                      "INNER JOIN chrFactions ON chrFactions.factionID = crpNPCCorporations.factionID "
@@ -387,20 +389,20 @@ class SDEQueries(object):
             assert type(x) is list, "requires a list"
             assert len(x) > 0, "list must have length > 0"
         except:
-            print ("getCorpsFromFactionName should return a list")
+            print ("get_corps_from_faction_name should return a list")
             raise
             sys.exit(0)
         return x
     
-    def getCorpsFromFactionID(self, faction):
+    def get_corps_from_faction_id(self, faction):
         """ Returns a list of integer corporation IDs when passed the string
             string representation of a Faction 
-            E.G. getCorpsFromFactionID(987654) returns [123456, 1234567]
+            E.G. get_corps_from_faction_id(987654) returns [123456, 1234567]
         """
         try:
             assert type(faction) is int, "requires a int"
         except:
-            print ("you passed getSystemID something that wasn't a int")
+            print ("you passed get_corps_from_faction_id something that wasn't a int")
             raise
         self.curr.execute("SELECT crpNPCCorporations.corporationID "
                      "FROM crpNPCCorporations "
@@ -416,20 +418,20 @@ class SDEQueries(object):
             assert type(x) is list, "requires a list"
             assert len(x) > 0, "list must have length > 0"
         except:
-            print ("getCorpsFromFactionID should return a list")
+            print ("get_corps_from_faction_id should return a list")
             raise
             sys.exit(0)
         return x
 
-    def getStationOwnersFromSystemID(self, sysID):
+    def get_station_owners_from_system_id(self, sysID):
         """ Returns a integer list of all the corporation which own a station in
             the solar system, when the solarsystem is given as a int
-            E.G. getStationOwnersFromSystemID(30001) returns [123456, 1234567]
+            E.G. get_station_owners_from_system_id(30001) returns [123456, 1234567]
             """
         try:
             assert type(sysID) is int, "requires an int"
         except:
-            print ("you passed getSystemID something that wasn't a int")
+            print ("you passed get_station_owners_from_system_id something that wasn't a int")
             raise
         self.curr.execute("SELECT corporationID FROM staStations "
                         "WHERE solarSystemID = {id}".
@@ -440,21 +442,21 @@ class SDEQueries(object):
             assert type(x) is list, "requires a list"
             assert len(x) > 0, "list must have length > 0"
         except:
-            print ("getStationOwnersFromSystemID returned something unexpected")
+            print ("get_station_owners_from_system_id returned something unexpected")
             raise
             sys.exit(0)
         return x
         
     
-    def getStationOwnerFromStationID(self, sysID):
+    def get_station_owner_from_station_id(self, sysID):
         """ Returns a single integer for the corporation which owns  the station
             given by the station ID, which is also a int
-            E.G. getStationOwnerFromStationID(9998789) returns 123456
+            E.G. get_station_owner_from_station_id(9998789) returns 123456
             """        
         try:
             assert type(sysID) is int, "requires a int"
         except:
-            print ("you passed getSystemID something that wasn't a int")
+            print ("you passed get_station_owner_from_station_id something that wasn't a int")
             raise
         self.curr.execute("SELECT corporationID FROM staStations WHERE stationID = {id}".
                      format(id=sysID))
@@ -462,7 +464,7 @@ class SDEQueries(object):
         try:
             assert type(x) != type(None), "Requires a int not a none"
         except:
-            print ("getStationOwnerFromStationID returned something unexpected")
+            print ("get_station_owner_from_station_id returned something unexpected")
             raise
             sys.exit(0)
         return x[0]
@@ -474,11 +476,11 @@ class SDEQueries(object):
     on industryActivityProducts.productTypeID = invTypes.typeID
     where industryActivityProducts.productTypeID = (SELECT typeID from invTypes where typeName = 'Anathema')
     '''
-    def getBpIdFromName(self, itemName):
+    def get_bp_id_from_name(self, itemName):
         try:
             assert type(itemName) is str, "requires a str"
         except:
-            print ("you passed getBpIDFromName something that wasn't a string")
+            print ("you passed get_bp_id_from_name something that wasn't a string")
             raise
         self.curr.execute("SELECT invTypes.typeID " 
                      "FROM invTypes "
@@ -491,7 +493,7 @@ class SDEQueries(object):
         try:
             assert type(x) != type(None), "Requires a int not a none"
         except:
-            print ("getBpIdFromName returned something unexpected")
+            print ("get_bp_id_from_name returned something unexpected")
             raise
             sys.exit(0)
         return x[0]
@@ -505,11 +507,16 @@ class SDEQueries(object):
     on industryActivityProducts.productTypeID = invTypes.typeID
     where industryActivityProducts.productTypeID = (SELECT typeID from invTypes where typeName = 'Anathema')
     '''
-    def getBpNameFromName(self, itemName):
+    def get_bp_name_from_name(self, itemName):
+        """ Returns the item id of the blue print of the item's name you passed
+            it.  You pass it the item's name, it works out which blue print it
+            is made from and returns the item ID for the blueprint            
+            EG: get_bp_name_from_name("Punisher") returns 578 
+        """
         try:
             assert type(itemName) is str, "requires a str"
         except:
-            print ("you passed getBpIDFromName something that wasn't a string")
+            print ("you passed get_bp_name_from_name something that wasn't a string")
             raise
         self.curr.execute("SELECT "
                      "(select invTypes.typeName from invTypes where invTypes.typeID =  industryActivityProducts.typeID) "
@@ -522,7 +529,7 @@ class SDEQueries(object):
         try:
             assert type(x) != type(None), "Requires a str not a none"
         except:
-            print ("getBpNameFromName returned something unexpected")
+            print ("get_bp_name_from_name returned something unexpected")
             raise
             sys.exit(0)
         return x[0].encode("ascii", "ignore")
@@ -582,9 +589,9 @@ class SDEQueries(object):
         return mats
     
     def getReprocOutput(self, itemID):
-        """ returns a dictionary of the materials obtained when recycling a module etc
+        """returns a dictionary of the materials obtained when recycling a module etc
             Accepts a integer, as the itemID as input
-         """
+        """
         try:
             assert type(itemID) is int, "getReprocOutput accepts only integers"
         except:
