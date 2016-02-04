@@ -23,8 +23,10 @@ from os.path import join, exists
 import psycopg2, requests, requests_cache
 
 from eveSQL import firstGo
-import untangle, json, pprint
+import untangle, json, pprint, logging
 
+
+logging.basicConfig(filename='eve-client.log',level=logging.DEBUG)
 #Row(name:Flicky G,characterID:859818750,corporationName:Flicky G Corporation,corporationID:98436502,allianceID:0,allianceName:,factionID:0,factionName:)
 
 #'EVE API Stuff
@@ -189,7 +191,7 @@ def make_throttle_hook(timeout=1.0):  # for eve market api calls
         return response
     return hook
 
-requests_cache.install_cache('wait_test')
+requests_cache.install_cache(cache_name='wait_test', expires_after = 3600)
 requests_cache.clear()
 s = requests_cache.CachedSession()
 s.hooks = {'response': make_throttle_hook(0.1)}
@@ -199,6 +201,7 @@ def now_value(systemID, interestingItem):
     resp = s.get(url=marketStatUrl)
     # print resp.text
     data = json.loads(resp.text)[0]
+    print ("data", data["buy"]["generated"])
     return data
     # pprint.pprint(data)
     # print ("They Buy ", data[0]['buy']['max'])
@@ -222,59 +225,64 @@ def insert_market_price(data):
         pass
     else:
         x["forQuery"]["systems"].append(0)
-    
-    currQ.execute("INSERT INTO marketprices " 
-                "(direction, " 
-                "item, "
-                "region, "
-                "system, "
-                "avg, "
-                "fivepercent, "
-                "generated, "
-                "hightolow, "
-                "max, "
-                "median, "
-                "min, "
-                "stddev, "
-                "variance, "
-                "volume, "
-                "wavg, "
-                "source) "
-                "VALUES ( "
-                "{dir}, " 
-                "{itm}, "
-                "{rgn}, "
-                "{sys}, "
-                "{avg}, "
-                "{pcn}, "
-                "{gnr}, "
-                "{htl}, "
-                "{max}, "
-                "{mdn}, "
-                "{min}, "
-                "{dev}, "
-                "{vrn}, "
-                "{vol}, "
-                "{wvg}, "
-                "{src})".
-                format(
-                dir = "'they_buy'", 
-                itm = x["forQuery"]["types"][0],
-                rgn = x["forQuery"]["regions"][0],
-                sys = x["forQuery"]["systems"][0],
-                avg = x["avg"],
-                pcn = x["fivePercent"],
-                gnr = x["generated"],
-                htl = x["highToLow"],
-                max = x["max"],
-                mdn = x["median"],
-                min = x["min"],
-                dev = x["stdDev"],
-                vrn = x["variance"],
-                vol = x["volume"],
-                wvg = x["wavg"], 
-                src = "'eve-market'")
-                )
+    try:
+        currQ.execute("INSERT INTO marketprices " 
+                    "(direction, " 
+                    "item, "
+                    "region, "
+                    "system, "
+                    "avg, "
+                    "fivepercent, "
+                    "generated, "
+                    "hightolow, "
+                    "max, "
+                    "median, "
+                    "min, "
+                    "stddev, "
+                    "variance, "
+                    "volume, "
+                    "wavg, "
+                    "source) "
+                    "VALUES ( "
+                    "{dir}, " 
+                    "{itm}, "
+                    "{rgn}, "
+                    "{sys}, "
+                    "{avg}, "
+                    "{pcn}, "
+                    "{gnr}, "
+                    "{htl}, "
+                    "{max}, "
+                    "{mdn}, "
+                    "{min}, "
+                    "{dev}, "
+                    "{vrn}, "
+                    "{vol}, "
+                    "{wvg}, "
+                    "{src})".
+                    format(
+                    dir = "'they_buy'", 
+                    itm = x["forQuery"]["types"][0],
+                    rgn = x["forQuery"]["regions"][0],
+                    sys = x["forQuery"]["systems"][0],
+                    avg = x["avg"],
+                    pcn = x["fivePercent"],
+                    gnr = x["generated"],
+                    htl = x["highToLow"],
+                    max = x["max"],
+                    mdn = x["median"],
+                    min = x["min"],
+                    dev = x["stdDev"],
+                    vrn = x["variance"],
+                    vol = x["volume"],
+                    wvg = x["wavg"], 
+                    src = "'eve-market'")
+                    )
+    except psycopg2.IntegrityError:
+        connQ.rollback()
+        logging.debug('Duplicate market data, connQ.execute rolled back!')
+    else:
+        connQ.commit() 
     #sell orders, where we buy something from them
     x = data["sell"]
     if x["forQuery"]["regions"]:
@@ -286,59 +294,64 @@ def insert_market_price(data):
         pass
     else:
         x["forQuery"]["systems"].append(0)
-    
-    currQ.execute("INSERT INTO marketprices " 
-                "(direction, " 
-                "item, "
-                "region, "
-                "system, "
-                "avg, "
-                "fivepercent, "
-                "generated, "
-                "hightolow, "
-                "max, "
-                "median, "
-                "min, "
-                "stddev, "
-                "variance, "
-                "volume, "
-                "wavg, "
-                "source) "
-                "VALUES ( "
-                "{dir}, " 
-                "{itm}, "
-                "{rgn}, "
-                "{sys}, "
-                "{avg}, "
-                "{pcn}, "
-                "{gnr}, "
-                "{htl}, "
-                "{max}, "
-                "{mdn}, "
-                "{min}, "
-                "{dev}, "
-                "{vrn}, "
-                "{vol}, "
-                "{wvg}, "
-                "{src})".
-                format(
-                dir = "'they_sell'", 
-                itm = x["forQuery"]["types"][0],
-                rgn = x["forQuery"]["regions"][0],
-                sys = x["forQuery"]["systems"][0],
-                avg = x["avg"],
-                pcn = x["fivePercent"],
-                gnr = x["generated"],
-                htl = x["highToLow"],
-                max = x["max"],
-                mdn = x["median"],
-                min = x["min"],
-                dev = x["stdDev"],
-                vrn = x["variance"],
-                vol = x["volume"],
-                wvg = x["wavg"], 
-                src = "'eve-market'")
-                )
+    try:
+        currQ.execute("INSERT INTO marketprices " 
+                    "(direction, " 
+                    "item, "
+                    "region, "
+                    "system, "
+                    "avg, "
+                    "fivepercent, "
+                    "generated, "
+                    "hightolow, "
+                    "max, "
+                    "median, "
+                    "min, "
+                    "stddev, "
+                    "variance, "
+                    "volume, "
+                    "wavg, "
+                    "source) "
+                    "VALUES ( "
+                    "{dir}, " 
+                    "{itm}, "
+                    "{rgn}, "
+                    "{sys}, "
+                    "{avg}, "
+                    "{pcn}, "
+                    "{gnr}, "
+                    "{htl}, "
+                    "{max}, "
+                    "{mdn}, "
+                    "{min}, "
+                    "{dev}, "
+                    "{vrn}, "
+                    "{vol}, "
+                    "{wvg}, "
+                    "{src})".
+                    format(
+                    dir = "'they_sell'", 
+                    itm = x["forQuery"]["types"][0],
+                    rgn = x["forQuery"]["regions"][0],
+                    sys = x["forQuery"]["systems"][0],
+                    avg = x["avg"],
+                    pcn = x["fivePercent"],
+                    gnr = x["generated"],
+                    htl = x["highToLow"],
+                    max = x["max"],
+                    mdn = x["median"],
+                    min = x["min"],
+                    dev = x["stdDev"],
+                    vrn = x["variance"],
+                    vol = x["volume"],
+                    wvg = x["wavg"], 
+                    src = "'eve-market'")
+                    )
+    except psycopg2.IntegrityError:
+        connQ.rollback()
+        logging.debug('Duplicate market data, connQ.execute rolled back!')
+    else:
+        connQ.commit() 
     #all orders - given as an average of both
     x = data["all"]
     if x["forQuery"]["regions"]:
@@ -350,60 +363,65 @@ def insert_market_price(data):
         pass
     else:
         x["forQuery"]["systems"].append(0)
+    try:
+        currQ.execute("INSERT INTO marketprices " 
+                    "(direction, " 
+                    "item, "
+                    "region, "
+                    "system, "
+                    "avg, "
+                    "fivepercent, "
+                    "generated, "
+                    "hightolow, "
+                    "max, "
+                    "median, "
+                    "min, "
+                    "stddev, "
+                    "variance, "
+                    "volume, "
+                    "wavg, "
+                    "source) "
+                    "VALUES ( "
+                    "{dir}, " 
+                    "{itm}, "
+                    "{rgn}, "
+                    "{sys}, "
+                    "{avg}, "
+                    "{pcn}, "
+                    "{gnr}, "
+                    "{htl}, "
+                    "{max}, "
+                    "{mdn}, "
+                    "{min}, "
+                    "{dev}, "
+                    "{vrn}, "
+                    "{vol}, "
+                    "{wvg}, "
+                    "{src})".
+                    format(
+                    dir = "'they_all'", 
+                    itm = x["forQuery"]["types"][0],
+                    rgn = x["forQuery"]["regions"][0],
+                    sys = x["forQuery"]["systems"][0],
+                    avg = x["avg"],
+                    pcn = x["fivePercent"],
+                    gnr = x["generated"],
+                    htl = x["highToLow"],
+                    max = x["max"],
+                    mdn = x["median"],
+                    min = x["min"],
+                    dev = x["stdDev"],
+                    vrn = x["variance"],
+                    vol = x["volume"],
+                    wvg = x["wavg"], 
+                    src = "'eve-market'")
+                    )
+    except psycopg2.IntegrityError:
+        connQ.rollback()
+        logging.debug('Duplicate market data, connQ.execute rolled back!')
+    else:
+        connQ.commit() 
     
-    currQ.execute("INSERT INTO marketprices " 
-                "(direction, " 
-                "item, "
-                "region, "
-                "system, "
-                "avg, "
-                "fivepercent, "
-                "generated, "
-                "hightolow, "
-                "max, "
-                "median, "
-                "min, "
-                "stddev, "
-                "variance, "
-                "volume, "
-                "wavg, "
-                "source) "
-                "VALUES ( "
-                "{dir}, " 
-                "{itm}, "
-                "{rgn}, "
-                "{sys}, "
-                "{avg}, "
-                "{pcn}, "
-                "{gnr}, "
-                "{htl}, "
-                "{max}, "
-                "{mdn}, "
-                "{min}, "
-                "{dev}, "
-                "{vrn}, "
-                "{vol}, "
-                "{wvg}, "
-                "{src})".
-                format(
-                dir = "'they_all'", 
-                itm = x["forQuery"]["types"][0],
-                rgn = x["forQuery"]["regions"][0],
-                sys = x["forQuery"]["systems"][0],
-                avg = x["avg"],
-                pcn = x["fivePercent"],
-                gnr = x["generated"],
-                htl = x["highToLow"],
-                max = x["max"],
-                mdn = x["median"],
-                min = x["min"],
-                dev = x["stdDev"],
-                vrn = x["variance"],
-                vol = x["volume"],
-                wvg = x["wavg"], 
-                src = "'eve-market'")
-                )
-    connQ.commit()
 
 
 
@@ -418,10 +436,57 @@ firstGo.getValueCorpAssets()
 
 
 """
+
+#get Stored Sell values
+def get_stored_sale_price(item, system):
+    currQ.execute("SELECT min FROM marketprices WHERE (direction = \'they_sell\' AND "
+                  "item = {it} AND system = {sys}) "
+                  "ORDER BY generated DESC "
+                  "LIMIT 1".
+                  format(it = item, sys = system))
+    x = currQ.fetchall()[0]
+    return float(x[0])
+
 #itemID, locationID, typeID, quantity, flag, singleton
 queries = SDEQueries()
 for x in corpAssets:
     print (x.itemID, queries.get_system_from_station_ID(x.locationID))
     y = now_value(queries.get_system_from_station_ID(x.locationID), x.typeID)
     insert_market_price(y)
+
+# find group and other items in the gorup of 220mm Vulcan AutoCannon I
+queries.getItemID("220mm Vulcan AutoCannon I")
+queries.getMarketGroupFromTypeID(490)
+items = queries.getItemsInGroup(575)
+
+
+systems = []    
+systems.append(queries.getSystemID("Hek"))
+systems.append(queries.getSystemID("Rens"))
+print ("333",  queries.getSystemID("Hek"))
+
+
+for theSystems in systems:
+    for theItems in items:
+        insert_market_price(now_value(theSystems, theItems))
+        
+get_stored_sale_price(490, queries.getSystemID("Hek"))
+
+
+sell_these = []
+for theItems in items:
+    diff = (get_stored_sale_price(theItems, queries.getSystemID("Hek")) - 
+            get_stored_sale_price(theItems, queries.getSystemID("Rens")))
+    if (diff > 0):
+        print (queries.getItemName(theItems), diff)
+        sell_this = [queries.getItemName(theItems), diff]
+        sell_these.append(sell_this)
+    else:
+        pass
     
+sell_these.sort(key=lambda x: x[1], reverse=True)
+pprint.pprint(sell_these)
+        
+        
+
+

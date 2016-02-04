@@ -623,6 +623,21 @@ class SDEQueries(object):
                 self.getItemsFromGroupID(x[0])
                 self.getChildsFromMarketGroupID(x[0])
     
+    def getMarketGroupFromTypeID(self, id):
+        self.curr.execute("SELECT marketGroupID from invTypes WHERE typeID = {id}".
+                          format(id = id))
+        group = self.curr.fetchone()
+        return group[0]
+
+    def getItemsInGroup(self, group):
+        self.curr.execute("SELECT typeID FROM invTypes "
+                        "WHERE marketGroupID = {grp}".format(grp = group))
+        results = self.curr.fetchall()
+        items = [y[0] for y in results]
+        return items
+        
+    
+    
     '''
     SELECT staServices.serviceName from staServices
     INNER JOIN staOperationServices ON staOperationServices.serviceID = staServices.serviceID 
