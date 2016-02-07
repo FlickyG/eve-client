@@ -9,6 +9,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 from future import standard_library
 from eveSQL.SDEQueries import SDEQueries
+from eveSQL.EVECrest import EVECrest
 standard_library.install_aliases()
 from builtins import str
 from builtins import object
@@ -152,8 +153,6 @@ for x in corpJournal.entries:
 
 """
 corpAssets = corp.AssetList().assets
-for x in corpAssets:
-    print (x)
 
 def populate_corp_assets_table(assets):
     #curr.executescript('drop table if exists corpassets;')    
@@ -201,7 +200,7 @@ def now_value(systemID, interestingItem):
     resp = s.get(url=marketStatUrl)
     # print resp.text
     data = json.loads(resp.text)[0]
-    print ("data", data["buy"]["generated"])
+    #print ("data", data["buy"]["generated"])
     return data
     # pprint.pprint(data)
     # print ("They Buy ", data[0]['buy']['max'])
@@ -449,37 +448,39 @@ def get_stored_sale_price(item, system):
 
 #itemID, locationID, typeID, quantity, flag, singleton
 queries = SDEQueries()
+markets = EVECrest()
+
 for x in corpAssets:
-    print (x.itemID, queries.get_system_from_station_ID(x.locationID))
+    #print (x.itemID, queries.get_system_from_station_ID(x.locationID))
     y = now_value(queries.get_system_from_station_ID(x.locationID), x.typeID)
     insert_market_price(y)
 
 # find group and other items in the gorup of 220mm Vulcan AutoCannon I
-queries.getItemID("220mm Vulcan AutoCannon I")
-queries.getMarketGroupFromTypeID(490)
+queries.get_item_id("220mm Vulcan AutoCannon I")
+queries.get_market_group_from_type_id(490)
 items = queries.getItemsInGroup(575)
 
 
 systems = []    
-systems.append(queries.getSystemID("Hek"))
-systems.append(queries.getSystemID("Rens"))
-print ("333",  queries.getSystemID("Hek"))
+systems.append(queries.get_system_id("Hek"))
+systems.append(queries.get_system_id("Rens"))
 
 
 for theSystems in systems:
     for theItems in items:
+        markets.get_date_last_entry(theItems, theSystems)
         insert_market_price(now_value(theSystems, theItems))
         
-get_stored_sale_price(490, queries.getSystemID("Hek"))
+get_stored_sale_price(490, queries.get_system_id("Hek"))
 
 
 sell_these = []
 for theItems in items:
-    diff = (get_stored_sale_price(theItems, queries.getSystemID("Hek")) - 
-            get_stored_sale_price(theItems, queries.getSystemID("Rens")))
+    diff = (get_stored_sale_price(theItems, queries.get_system_id("Hek")) - 
+            get_stored_sale_price(theItems, queries.get_system_id("Rens")))
     if (diff > 0):
-        print (queries.getItemName(theItems), diff)
-        sell_this = [queries.getItemName(theItems), diff]
+        #print (queries.get_item_name(theItems), diff, theItems)
+        sell_this = [queries.get_item_name(theItems), diff]
         sell_these.append(sell_this)
     else:
         pass
@@ -487,6 +488,7 @@ for theItems in items:
 sell_these.sort(key=lambda x: x[1], reverse=True)
 pprint.pprint(sell_these)
         
-        
+
+
 
 

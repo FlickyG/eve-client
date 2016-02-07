@@ -111,4 +111,65 @@ quantity    INT    NOT NULL,
 flag    INT    NOT NULL,
 singleton    INT    NOT NULL
 );
+
+#######
+Agents
+sqlite> SELECT * FROM crpActivities;
+1|Agriculture|
+2|Construction|
+3|Mining|
+4|Chemical|
+5|Military|
+6|Biotech|
+7|Hi-Tech|
+8|Entertainment|
+9|Shipyard|
+10|Warehouse|
+11|Retail|
+12|Trading|
+13|Bureaucratic|
+14|Political|
+15|Legal|
+16|Security|
+17|Financial|
+18|Education|
+19|Manufactur
+
+SELECT agentID, agtAgents.divisionID, locationID, level, agentTypeId
+FROM agtAgents
+JOIN crpNPCDivisions
+ON agtAgents.divisionID = crpNPCDivisions.divisionID
+WHERE locationID = 60004813
+LIMIT 5
+
+
+def find_level_3_agents(self, systemID):
+	takes a system id and outputs; agentid, stationid, level, division
+
+SELECT agentID, staStations.solarSystemID , agtAgents.divisionID, locationID, level, agentTypeId
+FROM agtAgents
+JOIN crpNPCDivisions
+ON agtAgents.divisionID = crpNPCDivisions.divisionID
+JOIN staStations
+ON agtAgents.locationID = staStations.stationID
+WHERE (
+staStations.solarSystemID = 30002385
+AND level > 2
+AND (agtAgents.divisionID = 23 OR agtAgents.divisionID =  28 OR agtAgents.divisionID =  29)
+)
+LIMIT 5
+	
+        try:
+            assert type(itemID) is int, "getReprocOutput accepts only integers"
+        except:
+            print ("you passed getReprocOutput something unexpected") 
+
+
+        try:
+            assert type(x) != type(None), "Requires a list not a none"
+        except:
+            print ("getReprocOutput returned something unexpected")
+            raise
+            sys.exit(0)
+
 	

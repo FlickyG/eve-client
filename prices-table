@@ -14,5 +14,19 @@ stddev NUMERIC NOT NULL,
 variance NUMERIC NOT NULL,
 volume INT NOT NULL,
 wavg NUMERIC NOT NULL,
-source CHAR(25) NOT NULL)
+source CHAR(25) NOT NULL,
 PRIMARY KEY (generated, item)
+);
+
+CREATE TABLE markethistory (
+type INT NOT NULL,
+region INT NOT NULL, 
+avg NUMERIC NOT NULL,
+date DATE NOT NULL,
+high NUMERIC NOT NULL,
+low NUMERIC NOT NULL,
+orderCount INT NOT NULL,
+volume BIGINT NOT NULL,
+PRIMARY KEY (type, region, date)
+);
+

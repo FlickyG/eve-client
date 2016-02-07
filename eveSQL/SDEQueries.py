@@ -16,20 +16,21 @@ class SDEQueries(object):
         You may need to repoint the location of the sqlite3.connect statement
         TDO - error hanfdling on this and option for CLI input
     """
-    self.logging.basicConfig(filename='eve-first_transactions.log',level=logging.DEBUG)
+    #self.logging.basicConfig(filename='eve-first_transactions.log',level=logging.DEBUG)
     
     def __init__(self):
         try:
             location1 = "/home/adam/Documents/eve/native/eve.db"
             self.conn = sqlite3.connect(location1)
             self.curr = self.conn.cursor()
-        except sqlite3.OperationalError:
-            print ("couldn't open the data base at %s" % (location1) )
+        except sqlite3.OperationalError as e:
+            print ("couldn't open the data base at %s %s" % (location1, e) )
         try:
+            location2 = "/Users/adam.green/eve.db"
             self.conn = sqlite3.connect("/Users/adam.green/Documents/personal-workspace/eve-project/sqlite-latest.sqlite")
             self.curr = self.conn.cursor()
         except sqlite3.OperationalError:
-            print ("couldn't open the data base at %s" % (location1) )
+            print ("couldn't open the data base at %s" % (location2) )
 
 
     def get_item_id(self, interestingItem):
@@ -179,7 +180,48 @@ class SDEQueries(object):
             raise
             sys.exit(0) 
         y = x[0]
-        return y    
+        return y
+
+    def get_station_name_from_station_id(self, stationID):
+        ''' Returns system id as an integer when passed a station ID
+        '''
+        #check input is a string
+        try:
+            assert type(stationID) is int, "requires a int"
+        except:
+            print ("you passed get_station_name_from_station_ID something that wasn't a int")
+            raise
+            sys.exit(0)
+        self.curr.execute("select stationName from staStations where stationID = {id}".format(id = stationID))    
+        x = self.curr.fetchone()
+        try:
+            assert x != type(None), "should not return a none"
+        except:
+            print ("get_station_name_from_station_ID didn't find what you were looking for and returned a None")
+            raise
+            sys.exit(0) 
+        y = x[0]
+        return y
+    
+    def get_stations_from_system_id(self, systemID):
+        ''' Returns a list of stations as an integer list  when passed a system ID
+        '''
+        #check input is a string
+        try:
+            assert type(systemID) is int, "requires a int"
+        except:
+            print ("you passed get_stations_from_system_ID something that wasn't a int")
+            raise
+            sys.exit(0) 
+        self.curr.execute("select stationID from staStations where solarSystemID = {id}".format(id = systemID))    
+        x = self.curr.fetchall()
+        try:
+            assert x != type(None), "should not return a none"
+        except:
+            print ("stations_from_system_ID didn't find what you were looking for and returned a None")
+            raise
+            sys.exit(0) 
+        return (i[0] for i in x)   
     
     def get_system_name(self, interestingSystem):
         ''' Returns system name as a string when passed the system id as an integer
@@ -644,7 +686,7 @@ class SDEQueries(object):
                 self.getItemsFromGroupID(x[0])
                 self.getChildsFromMarketGroupID(x[0])
     
-    def getMarketGroupFromTypeID(self, id):
+    def get_market_group_from_type_id(self, id):
         self.curr.execute("SELECT marketGroupID from invTypes WHERE typeID = {id}".
                           format(id = id))
         group = self.curr.fetchone()
@@ -654,9 +696,6 @@ class SDEQueries(object):
         self.curr.execute("SELECT typeID FROM invTypes "
                         "WHERE marketGroupID = {grp}".format(grp = group))
         results = self.curr.fetchall()
-        items = [y[0] for y in results]
-        return items
-        
     
     
     '''
@@ -742,19 +781,17 @@ class SDEQueries(object):
                           "ON dgmTypeEffects.effectID = dgmEffects.effectID "
                           "WHERE dgmTypeEffects.effectID = 11")
         x = self.curr.fetchall()
-        for y in x:
-            print (y[0])
+        return [i[0] for i in x]
 
 
-    def find_med_slots(self):
+    def find_mid_slots(self):
         self.curr.execute("SELECT dgmTypeEffects.typeID "
                           "FROM dgmTypeEffects "
                           "JOIN dgmEffects " 
                           "ON dgmTypeEffects.effectID = dgmEffects.effectID "
                           "WHERE dgmTypeEffects.effectID = 13")
         x = self.curr.fetchall()
-        for y in x:
-            print (y[0])               
+        return [i[0] for i in x]             
         
     def find_high_slots(self):
         self.curr.execute("SELECT dgmTypeEffects.typeID "
@@ -763,8 +800,7 @@ class SDEQueries(object):
                           "ON dgmTypeEffects.effectID = dgmEffects.effectID "
                           "WHERE dgmTypeEffects.effectID = 12")
         x = self.curr.fetchall()
-        for y in x:
-            print (y[0])
+        return [i[0] for i in x]
             
     def find_slot_size(self, id):
         self.curr.execute("SELECT dgmTypeEffects.effectID "
@@ -777,15 +813,142 @@ class SDEQueries(object):
         x = self.curr.fetchall()
         for y in x:
             print (y[0])
+            
+    def find_meta_mods(self, metalevel):
+        self.curr.execute("SELECT invTypes.typeID "
+        "FROM invTypes "
+        "JOIN dgmTypeAttributes "
+        "ON invTypes.typeID = dgmTypeAttributes.typeID "
+        "WHERE (dgmTypeAttributes.attributeID = 633 AND dgmTypeAttributes.valueInt = {lvl})".
+        format(lvl = metalevel))
+        x = self.curr.fetchall()
+        return [i[0] for i in x]
 
+    def print_meta3_mods(self):
+        queries = SDEQueries()
+        #queries.find_slot_size(1952)
+        highmods = set(queries.find_high_slots())
+        meta3mods = set(queries.find_meta_mods(3))
+        results = highmods.intersection(meta3mods)
+        for x in results:
+            print (queries.get_item_name(x))
+        print ("#####")
+        midmods = set(queries.find_mid_slots())
+        results = midmods.intersection(meta3mods)
+        for x in results:
+            print (queries.get_item_name(x))
+        print ("####")
+        lowmods = set(queries.find_low_slots())
+        results = lowmods.intersection(meta3mods)
+        for x in results:
+            print (queries.get_item_name(x))       
 
+    def find_level_agents(self, systemID):
+        try:
+            assert type(systemID) is int, "find_level_3_agents accepts only integers"
+        except:
+            print ("you passed find_level_3_agents something unexpected") 
+        stations = self.get_stations_from_system_id(systemID)
+        self.curr.execute("SELECT agentID, staStations.solarSystemID , agtAgents.divisionID, locationID, level, agentTypeId "
+                          "FROM agtAgents "
+                          "JOIN crpNPCDivisions "
+                          "ON agtAgents.divisionID = crpNPCDivisions.divisionID "
+                          "JOIN staStations "
+                          "ON agtAgents.locationID = staStations.stationID "
+                          "WHERE staStations.solarsystemID = {id} ".
+                          format(id = systemID))
+        agents = self.curr.fetchall()
+        try:
+            assert type(agents) != type(None), "Requires a list not a none"
+        except:
+            print ("getReprocOutput returned something unexpected")
+            raise
+            sys.exit(0)
+        return agents
+    
+    def find_high_level_agents(self, systemID):
+        try:
+            assert type(systemID) is int, "find_level_3_agents accepts only integers"
+        except:
+            print ("you passed find_level_3_agents something unexpected") 
+        stations = self.get_stations_from_system_id(systemID)
+        self.curr.execute("SELECT agentID, staStations.solarSystemID , agtAgents.divisionID, locationID, level, quality "
+                          "FROM agtAgents "
+                          "JOIN crpNPCDivisions "
+                          "ON agtAgents.divisionID = crpNPCDivisions.divisionID "
+                          "JOIN staStations "
+                          "ON agtAgents.locationID = staStations.stationID "
+                          "WHERE (staStations.solarsystemID = {id} "
+                          "AND level > 2 "
+                          "AND (agtAgents.divisionID = 24 OR agtAgents.divisionID =  28 OR agtAgents.divisionID =  29))".
+                          format(id = systemID))
+        agents = self.curr.fetchall()
+        try:
+            assert type(agents) != type(None), "Requires a list not a none"
+        except:
+            print ("getReprocOutput returned something unexpected")
+            raise
+            sys.exit(0)
+        return agents
+        
+        
+        
+    def get_division_name(self, divID):
+        try:
+            assert type(divID) is int, "get_division_name accepts only integers"
+        except:
+            print ("you passed get_division_name something unexpected")         
+        self.curr.execute("SELECT divisionName FROM crpNPCDivisions "
+                          "WHERE divisionID = {id}".
+                          format(id = divID))
+        x = self.curr.fetchall()
+        try:
+            assert type(x) != type(None), "Requires a list not a none"
+        except:
+            print ("getReprocOutput returned something unexpected")
+            raise
+            sys.exit(0)
+        print (x)                    
+        return x[0][0]
+
+    def print_high_agets_by_system(self, systemID):
+        x = self.find_high_level_agents(self.get_system_id(systemID))
+        for y in x:
+            print (
+                   y[0],
+                   self.get_system_name(y[1]),
+                   self.get_division_name(y[2]),
+                   self.get_station_name_from_station_id(y[3]),
+                   y[4],
+                   y[5]
+                   )
 
 def main():
     queries = SDEQueries()
-    #queries.find_low_slots()
-    #queries.find_med_slots()
-    queries.find_high_slots()
-    queries.find_slot_size(1952)
+    #queries.find_slot_size(1952)
+    stations = queries.get_stations_from_system_id(30002385)
+    queries.print_high_agets_by_system("Teonusude")
+    queries.print_high_agets_by_system("Gelfiven")
+    queries.print_high_agets_by_system("Gulfonodi")
+    queries.print_high_agets_by_system("Nakugard")
+    queries.print_high_agets_by_system("Tvink")
+    queries.print_high_agets_by_system("Lanngisi")
+    queries.print_high_agets_by_system("Magiko")
+    queries.print_high_agets_by_system("Vullat")
+    queries.print_high_agets_by_system("Eystur")
+    queries.print_high_agets_by_system("Hek")
+    queries.print_high_agets_by_system("Lustrevik")
+    queries.print_high_agets_by_system("Hror")
+    queries.print_high_agets_by_system("Otou")
+    queries.print_high_agets_by_system("Nakugard")
+    queries.print_high_agets_by_system("Uttindar")
+    
+    
+
+    
+    
+    
+    #queries.find_slot_size(1952)
 
 
 
@@ -796,9 +959,13 @@ if __name__ == "__main__":
 
 #x = queries.getAllMarketGroups()
 
-queries = SDEQueries()
-queries.getItemID("Anathema")
+#queries = SDEQueries()
+#queries.get_item_id("Anathema")
 #x = queries.getAllMarketGroups()
+
+
+
+
 
 
 """
