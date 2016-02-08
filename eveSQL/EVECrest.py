@@ -53,11 +53,15 @@ class EVECrest(object):
         self.currQ = self.connQ.cursor()
 
     def fetch_market_history(self, typeid, regionid):
-        try:
+        """ Contact the Eve Crest API and pulls down 13 months of market data.
+            This is the same info as contained in the market data screen in-game.
+        """
+        try: # crest api is flaky
             data = eve.get("https://public-crest.eveonline.com/market/{rg}/types/{id}/history/".
                        format(rg = regionid, id = typeid))
             return data
         except ConnectionError as e:
+            # to-do - needs to handle 404 errors too
             print ("e", e)
             print ("e.args", e.args)
             try:
@@ -66,7 +70,7 @@ class EVECrest(object):
                     raise
                 else:
                     pass
-            except Exception as f: #we wrongly assumed it was a reset connectio error
+            except Exception as f: #we wrongly assumed it was a reset connection error
                 try:
                     if "BadStatusLine" in e.args[0][1]:
                         print ("pycrest encountered bad status line")
@@ -79,6 +83,13 @@ class EVECrest(object):
                     #return e 
     
     def enter_market_history(self, type, region, data):
+        """ Inserts into the database the market data given as 'data'.  'Data'
+            should be a list and is derived from the EVE Crest API.  The list
+            contains the same data a single day's info on the market data screen
+            in-game.
+            If no items are bought or sold, then the price info from the 
+            previous day is carried over.
+        """
         try:
             self.currQ.execute("INSERT INTO markethistory ("
                           "type, "
@@ -121,13 +132,14 @@ class EVECrest(object):
                       "LIMIT 1".
                       format(it = id, region = regionid))
         data = self.currQ.fetchone()
-        """ If the database is empty, it may be because we've never pulled this data down
-            It may also be because there is no data to pull, such as capital ships in high sec
+        """ If the database is empty, it may be because we've never pulled this
+            data down. It may also be because there is no data to pull, such as
+            capital ships in high sec
         """
         try:
             assert data[0] != type(None)
         except TypeError:
-            print ("no data int the psql db for this item!")
+            print ("no data in the psql db for this item!")
             try:
                 temp_results = self.fetch_market_history(id, regionid)
                 x = temp_results["items"]
@@ -144,7 +156,7 @@ class EVECrest(object):
                 for datapoint in x:
                     self.enter_market_history(id, regionid, datapoint)
                 return self.get_date_last_entry(id, regionid)
-        # this is business as usual - get any missing day's info
+        # below is business as usual - get any missing day's info
         last_date = data[0]
         # server side data is updated each day at midnight
         if datetime.date.today() - last_date < datetime.timedelta(days = 2): # if the data is up to date
@@ -165,7 +177,7 @@ class EVECrest(object):
                 # skip market entries if the data is before the last date seen in the database
                 if (datetime.datetime.strptime(datapoint["date"].split("T")[0], "%Y-%m-%d").date()
                     > last_date):
-                    data_found = True
+                    data_found = True # we do have data but it might not be useful
                     print ("entering data")
                     self.enter_market_history(id, regionid, datapoint)
                 else:

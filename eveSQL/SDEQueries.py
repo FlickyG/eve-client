@@ -580,6 +580,9 @@ class SDEQueries(object):
     select typeID from industryActivityProducts where productTypeID = 969;
     '''
     def getBpFromID(self, itemID):
+        """ Returns the item ID for the blue print of the item of interest. 
+            Accepts a integer as the items type id
+        """
         try:
             assert type(itemID) is int, "requires a int"
         except:
@@ -606,11 +609,14 @@ class SDEQueries(object):
     ON  industryActivityMaterials.materialTypeID = invTypes.typeID
     WHERE industryActivityMaterials.typeID = 969 AND activityID = 1;
     '''
-    def matsForBp(self, bpID):
+    def mats_for_bp(self, bpID):
+        """ Returns a dictionary of the materials required to build the item
+            given in the blue print IDs output.
+        """
         try:
             assert type(bpID) is int, "requires a int"
         except:
-            print ("you passed matsForBp something that wasn't a int")
+            print ("you passed mats_for_bp something that wasn't a int")
             raise
         mats = {}
         self.curr.execute("SELECT invTypes.typeID, industryActivityMaterials.quantity "
@@ -623,21 +629,21 @@ class SDEQueries(object):
         try:
             assert type(x) != type(None), "Requires a str not a none"
         except:
-            print ("matsForBp returned something unexpected")
+            print ("mats_for_bp returned something unexpected")
             raise
             sys.exit(0)
         for y in x:
             mats[y[0]] = y[1]
         return mats
     
-    def getReprocOutput(self, itemID):
+    def get_reproc_output(self, itemID):
         """returns a dictionary of the materials obtained when recycling a module etc
             Accepts a integer, as the itemID as input
         """
         try:
-            assert type(itemID) is int, "getReprocOutput accepts only integers"
+            assert type(itemID) is int, "get_reproc_output accepts only integers"
         except:
-            print ("you passed getReprocOutput something unexpected") 
+            print ("you passed get_reproc_output something unexpected") 
         mats = {}
         self.curr.execute("SELECT materialTypeID, quantity "
                           "from invTypeMaterials "
@@ -648,7 +654,7 @@ class SDEQueries(object):
         try:
             assert type(x) != type(None), "Requires a list not a none"
         except:
-            print ("getReprocOutput returned something unexpected")
+            print ("get_reproc_output returned something unexpected")
             raise
             sys.exit(0)
         for keys, values in x:
@@ -656,7 +662,10 @@ class SDEQueries(object):
         return mats        
     # station services from station id
    
-    def getItemsFromGroupID(self, id):
+    def print_items_in_group(self, id):
+        """ prints all the items in the market group, when passed the market 
+            group as an integer.  Does not search recursively for sub-groups
+        """
         print (">", id)
         self.curr.execute("SELECT typeID, typeName FROM invTypes "
                             "WHERE marketGroupID = {id}".
@@ -665,37 +674,50 @@ class SDEQueries(object):
         for x in items:
             print ("*", x[1])
    
-    def getRootMarketGroups(self):
+    def get_root_market_groups(self):
+        """ returns a list of group ids which correspond to the root martket
+             groups.  These groups have no parent and are the top of the market
+             view in-game.  Requires no input
+        """
         values = []
         self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
                      "WHERE parentGroupID is Null "
                      "ORDER BY marketGroupName")
         marketRoot = self.curr.fetchall()
-        for x in marketRoot:
-            values.append(x[0])
-        return values
+        return [i[0] for i in marketRoot]
     
-    def getChildsFromMarketGroupID(self, id="Null"):
-            self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
-                "WHERE parentGroupID = {id} "
-                "ORDER BY marketGroupName".
-                format(id = id))
-            parents = self.curr.fetchall()
-            for x in parents:
-                print (x)
-                self.getItemsFromGroupID(x[0])
-                self.getChildsFromMarketGroupID(x[0])
+    def get_childs_from_market_group_id(self, id="Null"):
+        """ Returns as a list all of the child groups within the market group 
+            id passed to this function.  Also prints the recursive lookup of the
+            child groups and the items contained within them.  
+        """
+        self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
+            "WHERE parentGroupID = {id} "
+            "ORDER BY marketGroupName".
+            format(id = id))
+        parents = self.curr.fetchall()
+        for x in parents:
+            print (x)
+            self.print_items_in_group(x[0])
+            self.get_childs_from_market_group_id(x[0])
     
     def get_market_group_from_type_id(self, id):
+        """ when passed a item id as an int returns as an integer the market
+            group this item belongs to.
+        """
         self.curr.execute("SELECT marketGroupID from invTypes WHERE typeID = {id}".
                           format(id = id))
         group = self.curr.fetchone()
         return group[0]
 
-    def getItemsInGroup(self, group):
+    def get_items_in_group(self, group):
+        """ returns a list of integers corresponging to the item IDs of the
+        items in the given market group
+        """
         self.curr.execute("SELECT typeID FROM invTypes "
                         "WHERE marketGroupID = {grp}".format(grp = group))
         results = self.curr.fetchall()
+        return [i[0] for i in results]
     
     
     '''
@@ -704,7 +726,10 @@ class SDEQueries(object):
     INNER JOIN staStations ON staStations.operationID = staOperationServices.operationID
     WHERE staStations.stationID = 60004516
     '''
-    def getAllMarketGroups(self):
+    def get_all_market_groups(self):
+        """ prints the whole market and returns the root market groups.  These
+            are the market groups which have no parents.
+        """
         self.curr.execute("SELECT marketGroupID, marketGroupName from invMarketGroups "
                      "WHERE parentGroupID is Null "
                      "ORDER BY marketGroupName")
@@ -766,6 +791,8 @@ class SDEQueries(object):
         return marketRoot
     
     def purge_inv_types(self):
+        """ prints the id and name for all items in the invTypes table
+        """
         location1 = "/home/adam/Documents/eve/native/eve.db"
         conn = sqlite3.connect(location1)
         curr = conn.cursor()
@@ -775,6 +802,9 @@ class SDEQueries(object):
             print (y)
             
     def find_low_slots(self):
+        """ returns a list of integers corresponding to the itemID of all the 
+            modules which are fitted to ships in low slots
+        """
         self.curr.execute("SELECT dgmTypeEffects.typeID "
                           "FROM dgmTypeEffects "
                           "JOIN dgmEffects " 
@@ -785,6 +815,9 @@ class SDEQueries(object):
 
 
     def find_mid_slots(self):
+        """ returns a list of integers corresponding to the itemID of all the 
+            modules which are fitted to ships in medium slots
+        """
         self.curr.execute("SELECT dgmTypeEffects.typeID "
                           "FROM dgmTypeEffects "
                           "JOIN dgmEffects " 
@@ -794,6 +827,9 @@ class SDEQueries(object):
         return [i[0] for i in x]             
         
     def find_high_slots(self):
+        """ returns a list of integers corresponding to the itemID of all the 
+            modules which are fitted to ships in high slots
+        """
         self.curr.execute("SELECT dgmTypeEffects.typeID "
                           "FROM dgmTypeEffects "
                           "JOIN dgmEffects " 
@@ -803,6 +839,9 @@ class SDEQueries(object):
         return [i[0] for i in x]
             
     def find_slot_size(self, id):
+        """ prints the fitting size (low, med, high)of a module when passed the
+            itemID as an int
+        """
         self.curr.execute("SELECT dgmTypeEffects.effectID "
                           "FROM dgmTypeEffects "
                           "WHERE dgmTypeEffects.typeID = {id} "
@@ -815,6 +854,9 @@ class SDEQueries(object):
             print (y[0])
             
     def find_meta_mods(self, metalevel):
+        """ returns a list of integers corresponding to the item IDs of items
+            with the meta level
+        """
         self.curr.execute("SELECT invTypes.typeID "
         "FROM invTypes "
         "JOIN dgmTypeAttributes "
@@ -825,6 +867,8 @@ class SDEQueries(object):
         return [i[0] for i in x]
 
     def print_meta3_mods(self):
+        """ prints all meta3 mods, irrespective of their size
+        """
         queries = SDEQueries()
         #queries.find_slot_size(1952)
         highmods = set(queries.find_high_slots())
@@ -843,7 +887,10 @@ class SDEQueries(object):
         for x in results:
             print (queries.get_item_name(x))       
 
-    def find_level_agents(self, systemID):
+    def find_agents(self, systemID):
+        """ returns a list of agent details for a given system when the system
+            ID is a int
+        """
         try:
             assert type(systemID) is int, "find_level_3_agents accepts only integers"
         except:
@@ -861,12 +908,15 @@ class SDEQueries(object):
         try:
             assert type(agents) != type(None), "Requires a list not a none"
         except:
-            print ("getReprocOutput returned something unexpected")
+            print ("find_agents returned something unexpected")
             raise
             sys.exit(0)
         return agents
     
     def find_high_level_agents(self, systemID):
+        """ returns a list of details for all the agents when given a siystem ID
+            as a int.  Where agents are level 3 and above and combat related
+        """
         try:
             assert type(systemID) is int, "find_level_3_agents accepts only integers"
         except:
@@ -886,7 +936,7 @@ class SDEQueries(object):
         try:
             assert type(agents) != type(None), "Requires a list not a none"
         except:
-            print ("getReprocOutput returned something unexpected")
+            print ("find_agents returned something unexpected")
             raise
             sys.exit(0)
         return agents
@@ -894,6 +944,9 @@ class SDEQueries(object):
         
         
     def get_division_name(self, divID):
+        """ returns a sting corresponding to the name of the NPCs coporation
+            name
+        """
         try:
             assert type(divID) is int, "get_division_name accepts only integers"
         except:
@@ -905,13 +958,16 @@ class SDEQueries(object):
         try:
             assert type(x) != type(None), "Requires a list not a none"
         except:
-            print ("getReprocOutput returned something unexpected")
+            print ("get_division_name returned something unexpected")
             raise
             sys.exit(0)
         print (x)                    
         return x[0][0]
 
-    def print_high_agets_by_system(self, systemID):
+    def print_high_agents_by_system(self, systemID):
+        """ prints a list of details for all the agents above level 3
+            who are combat related
+        """
         x = self.find_high_level_agents(self.get_system_id(systemID))
         for y in x:
             print (
@@ -927,21 +983,21 @@ def main():
     queries = SDEQueries()
     #queries.find_slot_size(1952)
     stations = queries.get_stations_from_system_id(30002385)
-    queries.print_high_agets_by_system("Teonusude")
-    queries.print_high_agets_by_system("Gelfiven")
-    queries.print_high_agets_by_system("Gulfonodi")
-    queries.print_high_agets_by_system("Nakugard")
-    queries.print_high_agets_by_system("Tvink")
-    queries.print_high_agets_by_system("Lanngisi")
-    queries.print_high_agets_by_system("Magiko")
-    queries.print_high_agets_by_system("Vullat")
-    queries.print_high_agets_by_system("Eystur")
-    queries.print_high_agets_by_system("Hek")
-    queries.print_high_agets_by_system("Lustrevik")
-    queries.print_high_agets_by_system("Hror")
-    queries.print_high_agets_by_system("Otou")
-    queries.print_high_agets_by_system("Nakugard")
-    queries.print_high_agets_by_system("Uttindar")
+    queries.print_high_agents_by_system("Teonusude")
+    queries.print_high_agents_by_system("Gelfiven")
+    queries.print_high_agents_by_system("Gulfonodi")
+    queries.print_high_agents_by_system("Nakugard")
+    queries.print_high_agents_by_system("Tvink")
+    queries.print_high_agents_by_system("Lanngisi")
+    queries.print_high_agents_by_system("Magiko")
+    queries.print_high_agents_by_system("Vullat")
+    queries.print_high_agents_by_system("Eystur")
+    queries.print_high_agents_by_system("Hek")
+    queries.print_high_agents_by_system("Lustrevik")
+    queries.print_high_agents_by_system("Hror")
+    queries.print_high_agents_by_system("Otou")
+    queries.print_high_agents_by_system("Nakugard")
+    queries.print_high_agents_by_system("Uttindar")
     
     
 
@@ -957,11 +1013,11 @@ if __name__ == "__main__":
 
 #queries = SDEQueries()
 
-#x = queries.getAllMarketGroups()
+#x = queries.get_all_market_groups()
 
 #queries = SDEQueries()
 #queries.get_item_id("Anathema")
-#x = queries.getAllMarketGroups()
+#x = queries.get_all_market_groups()
 
 
 
@@ -969,7 +1025,7 @@ if __name__ == "__main__":
 
 
 """
-queries.getAllMarketGroups()
+queries.get_all_market_groups()
 
 print (queries.getBpFromID(451))
 
@@ -981,10 +1037,10 @@ print (queries.getReprocOutput(x))
 """
    
 
-#x = queries.getAllMarketGroups()
+#x = queries.get_all_market_groups()
 
 
-#x = queries.getAllMarketGroups()
+#x = queries.get_all_market_groups()
 
 
 

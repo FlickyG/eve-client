@@ -489,6 +489,12 @@ sell_these.sort(key=lambda x: x[1], reverse=True)
 pprint.pprint(sell_these)
         
 
+        
+systems = ["Teonusude", "Gelfiven", "Gulfonodi", "Nakugard", "Tvink", 
+           "Lanngisi", "Magiko", "Vullat","Eystur", "Hek", "Lustrevik",
+           "Hror", "Otou", "Nakugard", "Uttindar"]
 
+x = queries.find_meta_mods(3)
+y = set(x).intersection(set(queries.find_high))
 
 
