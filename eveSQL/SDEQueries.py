@@ -50,7 +50,6 @@ class SDEQueries(object):
         strr = "\""
         self.curr.execute(strr.join([query, interestingItem, ""])) 
         x = self.curr.fetchone()
-        print ("x", x)
         #check database doesn't return a none type
         try:
             assert x[0] != type(None)

@@ -15,7 +15,7 @@ from builtins import str
 from builtins import object
 
 import eveapi
-import time
+import time, datetime
 import tempfile
 import pickle
 import zlib
@@ -23,7 +23,7 @@ import os
 from os.path import join, exists
 import psycopg2, requests, requests_cache
 
-from eveSQL import firstGo
+#from eveSQL import firstGo
 import untangle, json, pprint, logging
 
 
@@ -190,10 +190,12 @@ def make_throttle_hook(timeout=1.0):  # for eve market api calls
         return response
     return hook
 
-requests_cache.install_cache(cache_name='wait_test', expires_after = 3600)
-requests_cache.clear()
-s = requests_cache.CachedSession()
+#requests_cache.install_cache(cache_name='first_transactions', expires_after = 1)
+#requests_cache.clear()
+expire_after = datetime.timedelta(hours = 6)
+s = requests_cache.CachedSession(cache_name="first_transaction_cache", expire_after=expire_after)
 s.hooks = {'response': make_throttle_hook(0.1)}
+
  
 def now_value(systemID, interestingItem):
     marketStatUrl = "http://api.eve-central.com/api/marketstat/json?usesystem=" + str(systemID) + "&typeid=" + str(interestingItem)
@@ -211,7 +213,7 @@ x = now_value(30002510, 7621)
 
 def insert_market_price(data):
     """ insert into the psql table 'marketprices' the data given as an input
-    the input data shouls usually be a json lookup on the eve-market API
+    the input data shouls usually be a json lookup on the eve-central API
     """
     # buy orders - wehere we sell an item
     x = data["buy"]
@@ -458,21 +460,21 @@ for x in corpAssets:
 # find group and other items in the gorup of 220mm Vulcan AutoCannon I
 queries.get_item_id("220mm Vulcan AutoCannon I")
 queries.get_market_group_from_type_id(490)
-items = queries.getItemsInGroup(575)
+items = queries.get_items_in_group(575)
 
 
 systems = []    
 systems.append(queries.get_system_id("Hek"))
 systems.append(queries.get_system_id("Rens"))
 
-
+"""
 for theSystems in systems:
     for theItems in items:
         markets.get_date_last_entry(theItems, theSystems)
         insert_market_price(now_value(theSystems, theItems))
         
 get_stored_sale_price(490, queries.get_system_id("Hek"))
-
+"""
 
 sell_these = []
 for theItems in items:
@@ -488,13 +490,62 @@ for theItems in items:
 sell_these.sort(key=lambda x: x[1], reverse=True)
 pprint.pprint(sell_these)
         
-
+groups = ["Afterburneres", ""]
         
-systems = ["Teonusude", "Gelfiven", "Gulfonodi", "Nakugard", "Tvink", 
-           "Lanngisi", "Magiko", "Vullat","Eystur", "Hek", "Lustrevik",
+systems = ["Lustrevik", "Teonusude", "Gelfiven", "Gulfonodi", "Nakugard", "Tvink", 
+           "Lanngisi", "Magiko", "Vullat","Eystur", "Hek", 
            "Hror", "Otou", "Nakugard", "Uttindar"]
 
-x = queries.find_meta_mods(3)
-y = set(x).intersection(set(queries.find_high))
+systems = ["Rens"]
 
+x = queries.find_meta_mods(4)
+y = set(x).intersection(set(queries.find_high_slots()))
 
+for system in systems:
+    for item in y:
+        print ("system = {sys} item = {it}".format(sys = system, it = queries.get_item_name(item)))
+        print ("system= {sys} item = {it}".format(sys = queries.get_system_id(system), it = item))
+        insert_market_price(now_value(queries.get_system_id(system), item))
+        print ("just finished adding data")
+
+def find_cheapest(item):
+    hubs = ["Rens", "Jita", "Amarr"]
+    cheapest_location = None
+    cheapest_price = -1
+    for hub in hubs:
+        try:
+            if (cheapest_price == -1) and (get_stored_sale_price(item, queries.get_system_id(hub)) > 0):
+                print ("cheapest price = -1")
+                cheapest_location = hub
+                cheapest_price = get_stored_sale_price(item, queries.get_system_id(hub))
+            elif get_stored_sale_price(item, queries.get_system_id(hub)) < cheapest_price:
+                cheapest_location = hub
+                cheapest_price = get_stored_sale_price(item, queries.get_system_id(hub))
+        except:
+            insert_market_price(now_value(queries.get_system_id(hub), item))
+            get_stored_sale_price(item, queries.get_system_id(hub))
+    return (cheapest_location, cheapest_price)
+            
+    
+def get_none_sold_dict(items, system):
+    consider_these = {}
+    for item in items:
+        if get_stored_sale_price(item, system) == 0:
+            consider_these[queries.get_item_name(item)] = [get_stored_sale_price(item, queries.get_system_id("Jita")),  get_stored_sale_price(item, queries.get_system_id("Rens")), (get_stored_sale_price(item, queries.get_system_id("Rens")) - get_stored_sale_price(item, queries.get_system_id("Jita")))]
+    return consider_these
+
+#sell_these = get_none_sold_dict(y, queries.get_system_id("Lustrevik"))
+#sell_these.sort(key=lambda x: x[2], reverse=True)
+#pprint.pprint(sell_these)
+
+#sell_these = get_none_sold_dict(y, queries.get_system_id("Lustrevik"))
+for keys, values in sorted(sell_these.items(), key=lambda e: e[1][2], reverse = True):
+    print (keys, values, find_cheapest(queries.get_item_id(keys)))
+
+for item in y:
+    markets.get_date_last_entry(item, queries.get_region_id("Heimatar"))
+
+for item in y:
+    print (queries.get_item_name(item))
+
+        

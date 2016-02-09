@@ -66,15 +66,17 @@ class EVECrest(object):
             print ("e.args", e.args)
             try:
                 if e.args[0].args[1].errno == 104:
-                    print ("eve crest connection reset by peer")
-                    raise
+                    print ("eve crest connection reset by peer {ti}, {name}".
+                           format(ti = typeid, name = regionid))
+                    self.fetch_market_history(typeid, regionid) # retry for ever
                 else:
                     pass
             except Exception as f: #we wrongly assumed it was a reset connection error
                 try:
                     if "BadStatusLine" in e.args[0][1]:
-                        print ("pycrest encountered bad status line")
-                        raise
+                        print ("pycrest encountered bad status line {ti}, {name}".
+                           format(ti = typeid, name = regionid))
+                        self.fetch_market_history(typeid, regionid) # retry for ever
                     else:
                         pass                  
                         #return f # ion which case we aren't sure what the rror is
@@ -148,9 +150,18 @@ class EVECrest(object):
                 print ("temp results")
                 print ("the error", e)
                 return ("None")
+            except pycrest.errors.APIException as e:
+                if "Got unexpected status code from server: 404" in e:
+                    print ("successfully caught 404, retrying ", id)
+                    self.get_date_last_entry(id, regionid)
+                print ("404?", e, id, regionid)
+                print ("dir(e)", dir(e))
+                print ("e.args", e.args)
+                print ("e.messsages", e.message)
+                return ("None")
             if len(x) == 0:
                 # here we catch the case of capital ships in high sec mentioned above
-                print ("there is no market data for this item")
+                print ("there is no market data for this item", id)
                 return None
             else: #here we pull down data we haven't seen before
                 for datapoint in x:
@@ -172,7 +183,6 @@ class EVECrest(object):
             """
             data_found  = False # use this to prevent infinite loop
             for datapoint in x:
-                print (datapoint)
                 #print ("type of datapoint", type(datetime.datetime.strptime(datapoint["date"].split("T")[0], "%Y-%m-%d").date()))
                 # skip market entries if the data is before the last date seen in the database
                 if (datetime.datetime.strptime(datapoint["date"].split("T")[0], "%Y-%m-%d").date()

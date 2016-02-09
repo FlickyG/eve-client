@@ -28,6 +28,13 @@
 37895
 37893
 
+#changed in patch on 7/1/16
+5139 # Small Diminishing Power System Drain I'
+8093 #Prototype 'Arbalest' Light Missile Launcher
+
+# DELETE FROM  dgmTypeEffects WHERE typeID = 16479; #Heavy Unstable Power Fluctuator I
+
+
 Solar System ID 30000145
 Faction Id 500001
 Faction Name Caldari State
@@ -171,5 +178,11 @@ LIMIT 5
             print ("getReprocOutput returned something unexpected")
             raise
             sys.exit(0)
-
+            
+            
+SELECT dgmTypeEffects.typeID
+FROM dgmTypeEffects
+JOIN dgmEffects 
+ON dgmTypeEffects.effectID = dgmEffects.effectID
+WHERE dgmTypeEffects.effectID = 12
 	

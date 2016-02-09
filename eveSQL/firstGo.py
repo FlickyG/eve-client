@@ -77,6 +77,7 @@ class MyCacheHandler(object):  # for eve api calls
         self.count = 0
         self.cache = {}
         self.tempdir = join(tempfile.gettempdir(), "eveapi")
+        print ("loaction of firt go cache", join(tempfile.gettempdir(), "eveapi"))
         if not exists(self.tempdir):
             os.makedirs(self.tempdir)
 
@@ -281,7 +282,7 @@ def make_throttle_hook(timeout=1.0):  # for eve market api calls
         return response
     return hook
 
-requests_cache.install_cache('wait_test')
+requests_cache.install_cache('first_go', expires_after = 1)
 requests_cache.clear()
 s = requests_cache.CachedSession()
 s.hooks = {'response': make_throttle_hook(0.1)}
