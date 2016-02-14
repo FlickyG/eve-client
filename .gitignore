@@ -1,0 +1,9 @@
+*.db
+*.pyc
+*.log
+*.sqlite
+*.sql
+.yaml
+*.yaml
+*.bak
+.*

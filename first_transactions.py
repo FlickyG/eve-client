@@ -22,12 +22,20 @@ import zlib
 import os
 from os.path import join, exists
 import psycopg2, requests, requests_cache
+#for debuggin
+import code
+#for pretty printing of dictionary
+from prettytable import PrettyTable
+# another apptoach to pretty printing
+from tabulate import tabulate
 
 #from eveSQL import firstGo
 import untangle, json, pprint, logging
+print ("###### NAME ####", __name__)
+logger = logging.getLogger(__name__)
 
 
-logging.basicConfig(filename='eve-first_transactions.log',level=logging.DEBUG)
+#logging.basicConfig(filename='eve-first_transactions.log',level=logging.DEBUG)
 #Row(name:Flicky G,characterID:859818750,corporationName:Flicky G Corporation,corporationID:98436502,allianceID:0,allianceName:,factionID:0,factionName:)
 
 #'EVE API Stuff
@@ -120,432 +128,463 @@ class MyCacheHandler(object):
             f.close()
 
 
-## eve api
-auth = api.auth(keyID=CORP_KEYID, vCode=CORP_VCODE)
-result2 = auth.account.Characters()
-cachedApi = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=True))
-# postgres for safe keeping of our own data
-connQ = psycopg2.connect("dbname='eveclient'  user='adam'")
-currQ = connQ.cursor()
-
-
-
-# Now the best way to iterate over the characters on your account and show
-# the isk balance is probably this way:
-"""
-for character in result2.characters:
-    if  "Flicky G" == character.name:
-        wallet = auth.corp.AccountBalance(characterID=character.characterID)
-        for x in wallet.accounts:
-            print (x)
-"""         
-corp = cachedApi.auth(keyID=1383071, vCode="m0ecx5e1r8RCMsizNKXyB91HQchkHjJmNJlG8or0xy3VvkpiAJj1J7wXb70lUMm0").corporation(98436502)
-corpTransactions  = corp.WalletTransactions()
-
-"""
-for x in corpTransactions.transactions:
-    print (x)
+class MarketQuestions(object):
     
-corpJournal = corp.WalletJournal()
-for x in corpJournal.entries:
-    print (x)
+    def __init__(self):
+        self.connQ = psycopg2.connect("dbname='eveclient'  user='adam'")
+        self.currQ = self.connQ.cursor()
+        expire_after = datetime.timedelta(hours = 6)
+        self.s = requests_cache.CachedSession(cache_name="first_transaction_cache", expire_after=expire_after)
+        self.s.hooks = {'response': self.make_throttle_hook(0.1)}
     
+        self.queries = SDEQueries()
+        self.markets = EVECrest()
 
-"""
-corpAssets = corp.AssetList().assets
-
-def populate_corp_assets_table(assets):
-    #curr.executescript('drop table if exists corpassets;')    
-    """currQ.execute("CREATE TABLE corpassets "
-                "(itemid INT PRIMARY KEY  NOT NULL,"
-                "locationid     INT    NOT NULL,"
-                "typeid    INT    NOT NULL,"
-                "quantity    INT    NOT NULL,"
-                "flag    INT    NOT NULL,"
-                "singleton    INT    NOT NULL"
-                ");")
-    """
-    currQ.execute("DELETE FROM corpassets")
-    for x in assets:
-        '''conn.execute("INSERT INTO corpassets "
-                     "(itemid, locationid, typeid, quantity, flags, singleton) "
-                     "VALUES (", x["itemID"],", "x['locationID'],", ",x['typeID'],", ",x['quantity']",","
-                     ""x['flags']", ",x['singleton']);""
-                     )'''
-        currQ.execute("INSERT INTO corpassets ({ii}, {li}, {ti}, {q}, {f}, {s}) VALUES ({vii}, {vli}, {vti}, {vq}, {vf}, {vs})".
-                    format(ii="itemid", li="locationid", ti="typeid", q="quantity", f="flag", s="singleton",
-                            vii=x["itemID"], vli=x["locationID"], vti=x["typeID"], vq=x["quantity"], vf=x["flag"], vs=x["singleton"]))
-    connQ.commit()
-    
-
-def make_throttle_hook(timeout=1.0):  # for eve market api calls
-    """
-    Returns a response hook function which sleeps for `timeout` seconds if
-    response is not cached
-    """
-    def hook(response, **kwargs):
-        if not getattr(response, 'from_cache', False):
-            print ('sleeping')
-            time.sleep(timeout)
-        return response
-    return hook
-
-#requests_cache.install_cache(cache_name='first_transactions', expires_after = 1)
-#requests_cache.clear()
-expire_after = datetime.timedelta(hours = 6)
-s = requests_cache.CachedSession(cache_name="first_transaction_cache", expire_after=expire_after)
-s.hooks = {'response': make_throttle_hook(0.1)}
-
- 
-def now_value(systemID, interestingItem):
-    marketStatUrl = "http://api.eve-central.com/api/marketstat/json?usesystem=" + str(systemID) + "&typeid=" + str(interestingItem)
-    resp = s.get(url=marketStatUrl)
-    # print resp.text
-    data = json.loads(resp.text)[0]
-    #print ("data", data["buy"]["generated"])
-    return data
-    # pprint.pprint(data)
-    # print ("They Buy ", data[0]['buy']['max'])
-    # print ("They Sell ", data[0]['sell']['min'])
-    
-x = now_value(30002510, 7621)
-
-
-def insert_market_price(data):
-    """ insert into the psql table 'marketprices' the data given as an input
-    the input data shouls usually be a json lookup on the eve-central API
-    """
-    # buy orders - wehere we sell an item
-    x = data["buy"]
-    if x["forQuery"]["regions"]:
-        pass
-    else:
-        x["forQuery"]["regions"].append(0)
-    
-    if x["forQuery"]["systems"]:
-        pass
-    else:
-        x["forQuery"]["systems"].append(0)
-    try:
-        currQ.execute("INSERT INTO marketprices " 
-                    "(direction, " 
-                    "item, "
-                    "region, "
-                    "system, "
-                    "avg, "
-                    "fivepercent, "
-                    "generated, "
-                    "hightolow, "
-                    "max, "
-                    "median, "
-                    "min, "
-                    "stddev, "
-                    "variance, "
-                    "volume, "
-                    "wavg, "
-                    "source) "
-                    "VALUES ( "
-                    "{dir}, " 
-                    "{itm}, "
-                    "{rgn}, "
-                    "{sys}, "
-                    "{avg}, "
-                    "{pcn}, "
-                    "{gnr}, "
-                    "{htl}, "
-                    "{max}, "
-                    "{mdn}, "
-                    "{min}, "
-                    "{dev}, "
-                    "{vrn}, "
-                    "{vol}, "
-                    "{wvg}, "
-                    "{src})".
-                    format(
-                    dir = "'they_buy'", 
-                    itm = x["forQuery"]["types"][0],
-                    rgn = x["forQuery"]["regions"][0],
-                    sys = x["forQuery"]["systems"][0],
-                    avg = x["avg"],
-                    pcn = x["fivePercent"],
-                    gnr = x["generated"],
-                    htl = x["highToLow"],
-                    max = x["max"],
-                    mdn = x["median"],
-                    min = x["min"],
-                    dev = x["stdDev"],
-                    vrn = x["variance"],
-                    vol = x["volume"],
-                    wvg = x["wavg"], 
-                    src = "'eve-market'")
-                    )
-    except psycopg2.IntegrityError:
-        connQ.rollback()
-        logging.debug('Duplicate market data, connQ.execute rolled back!')
-    else:
-        connQ.commit() 
-    #sell orders, where we buy something from them
-    x = data["sell"]
-    if x["forQuery"]["regions"]:
-        pass
-    else:
-        x["forQuery"]["regions"].append(0)
-    
-    if x["forQuery"]["systems"]:
-        pass
-    else:
-        x["forQuery"]["systems"].append(0)
-    try:
-        currQ.execute("INSERT INTO marketprices " 
-                    "(direction, " 
-                    "item, "
-                    "region, "
-                    "system, "
-                    "avg, "
-                    "fivepercent, "
-                    "generated, "
-                    "hightolow, "
-                    "max, "
-                    "median, "
-                    "min, "
-                    "stddev, "
-                    "variance, "
-                    "volume, "
-                    "wavg, "
-                    "source) "
-                    "VALUES ( "
-                    "{dir}, " 
-                    "{itm}, "
-                    "{rgn}, "
-                    "{sys}, "
-                    "{avg}, "
-                    "{pcn}, "
-                    "{gnr}, "
-                    "{htl}, "
-                    "{max}, "
-                    "{mdn}, "
-                    "{min}, "
-                    "{dev}, "
-                    "{vrn}, "
-                    "{vol}, "
-                    "{wvg}, "
-                    "{src})".
-                    format(
-                    dir = "'they_sell'", 
-                    itm = x["forQuery"]["types"][0],
-                    rgn = x["forQuery"]["regions"][0],
-                    sys = x["forQuery"]["systems"][0],
-                    avg = x["avg"],
-                    pcn = x["fivePercent"],
-                    gnr = x["generated"],
-                    htl = x["highToLow"],
-                    max = x["max"],
-                    mdn = x["median"],
-                    min = x["min"],
-                    dev = x["stdDev"],
-                    vrn = x["variance"],
-                    vol = x["volume"],
-                    wvg = x["wavg"], 
-                    src = "'eve-market'")
-                    )
-    except psycopg2.IntegrityError:
-        connQ.rollback()
-        logging.debug('Duplicate market data, connQ.execute rolled back!')
-    else:
-        connQ.commit() 
-    #all orders - given as an average of both
-    x = data["all"]
-    if x["forQuery"]["regions"]:
-        pass
-    else:
-        x["forQuery"]["regions"].append(0)
-    
-    if x["forQuery"]["systems"]:
-        pass
-    else:
-        x["forQuery"]["systems"].append(0)
-    try:
-        currQ.execute("INSERT INTO marketprices " 
-                    "(direction, " 
-                    "item, "
-                    "region, "
-                    "system, "
-                    "avg, "
-                    "fivepercent, "
-                    "generated, "
-                    "hightolow, "
-                    "max, "
-                    "median, "
-                    "min, "
-                    "stddev, "
-                    "variance, "
-                    "volume, "
-                    "wavg, "
-                    "source) "
-                    "VALUES ( "
-                    "{dir}, " 
-                    "{itm}, "
-                    "{rgn}, "
-                    "{sys}, "
-                    "{avg}, "
-                    "{pcn}, "
-                    "{gnr}, "
-                    "{htl}, "
-                    "{max}, "
-                    "{mdn}, "
-                    "{min}, "
-                    "{dev}, "
-                    "{vrn}, "
-                    "{vol}, "
-                    "{wvg}, "
-                    "{src})".
-                    format(
-                    dir = "'they_all'", 
-                    itm = x["forQuery"]["types"][0],
-                    rgn = x["forQuery"]["regions"][0],
-                    sys = x["forQuery"]["systems"][0],
-                    avg = x["avg"],
-                    pcn = x["fivePercent"],
-                    gnr = x["generated"],
-                    htl = x["highToLow"],
-                    max = x["max"],
-                    mdn = x["median"],
-                    min = x["min"],
-                    dev = x["stdDev"],
-                    vrn = x["variance"],
-                    vol = x["volume"],
-                    wvg = x["wavg"], 
-                    src = "'eve-market'")
-                    )
-    except psycopg2.IntegrityError:
-        connQ.rollback()
-        logging.debug('Duplicate market data, connQ.execute rolled back!')
-    else:
-        connQ.commit() 
-    
-
-
-
-    
-"""
-
-#30002053 hek
-# 34 tritanium
-
-firstGo.createCorpAssetsTable(corpAssets)
-firstGo.getValueCorpAssets()
-
-
-"""
-
-#get Stored Sell values
-def get_stored_sale_price(item, system):
-    currQ.execute("SELECT min FROM marketprices WHERE (direction = \'they_sell\' AND "
-                  "item = {it} AND system = {sys}) "
-                  "ORDER BY generated DESC "
-                  "LIMIT 1".
-                  format(it = item, sys = system))
-    x = currQ.fetchall()[0]
-    return float(x[0])
-
-#itemID, locationID, typeID, quantity, flag, singleton
-queries = SDEQueries()
-markets = EVECrest()
-
-for x in corpAssets:
-    #print (x.itemID, queries.get_system_from_station_ID(x.locationID))
-    y = now_value(queries.get_system_from_station_ID(x.locationID), x.typeID)
-    insert_market_price(y)
-
-# find group and other items in the gorup of 220mm Vulcan AutoCannon I
-queries.get_item_id("220mm Vulcan AutoCannon I")
-queries.get_market_group_from_type_id(490)
-items = queries.get_items_in_group(575)
-
-
-systems = []    
-systems.append(queries.get_system_id("Hek"))
-systems.append(queries.get_system_id("Rens"))
-
-"""
-for theSystems in systems:
-    for theItems in items:
-        markets.get_date_last_entry(theItems, theSystems)
-        insert_market_price(now_value(theSystems, theItems))
+    def populate_corp_assets_table(self, assets):
+        #curr.executescript('drop table if exists corpassets;')    
+        """currQ.execute("CREATE TABLE corpassets "
+                    "(itemid INT PRIMARY KEY  NOT NULL,"
+                    "locationid     INT    NOT NULL,"
+                    "typeid    INT    NOT NULL,"
+                    "quantity    INT    NOT NULL,"
+                    "flag    INT    NOT NULL,"
+                    "singleton    INT    NOT NULL"
+                    ");")
+        """
+        self.currQ.execute("DELETE FROM corpassets")
+        for x in assets:
+            '''conn.execute("INSERT INTO corpassets "
+                         "(itemid, locationid, typeid, quantity, flags, singleton) "
+                         "VALUES (", x["itemID"],", "x['locationID'],", ",x['typeID'],", ",x['quantity']",","
+                         ""x['flags']", ",x['singleton']);""
+                         )'''
+            self.currQ.execute("INSERT INTO corpassets ({ii}, {li}, {ti}, {q}, {f}, {s}) VALUES ({vii}, {vli}, {vti}, {vq}, {vf}, {vs})".
+                        format(ii="itemid", li="locationid", ti="typeid", q="quantity", f="flag", s="singleton",
+                                vii=x["itemID"], vli=x["locationID"], vti=x["typeID"], vq=x["quantity"], vf=x["flag"], vs=x["singleton"]))
+        self.connQ.commit()
         
-get_stored_sale_price(490, queries.get_system_id("Hek"))
-"""
-
-sell_these = []
-for theItems in items:
-    diff = (get_stored_sale_price(theItems, queries.get_system_id("Hek")) - 
-            get_stored_sale_price(theItems, queries.get_system_id("Rens")))
-    if (diff > 0):
-        #print (queries.get_item_name(theItems), diff, theItems)
-        sell_this = [queries.get_item_name(theItems), diff]
-        sell_these.append(sell_this)
-    else:
-        pass
+    def make_throttle_hook(self, timeout=1.0):  # for eve market api calls
+        logger.debug("HELLO LOGGER")
+        """
+        Returns a response hook function which sleeps for `timeout` seconds if
+        response is not cached
+        """
+        def hook(response, **kwargs):
+            if not getattr(response, 'from_cache', False):
+                # ('sleeping')
+                time.sleep(timeout)
+            return response
+        return hook
     
-sell_these.sort(key=lambda x: x[1], reverse=True)
-pprint.pprint(sell_these)
+    def now_value(self, systemID, interestingItem):
+        marketStatUrl = "http://api.eve-central.com/api/marketstat/json?usesystem=" + str(systemID) + "&typeid=" + str(interestingItem)
+        resp = self.s.get(url=marketStatUrl)
+        # print resp.text
+        data = json.loads(resp.text)[0]
+        #print ("data", data["buy"]["generated"])
+        return data
+        # pprint.pprint(data)
+        # print ("They Buy ", data[0]['buy']['max'])
+        # print ("They Sell ", data[0]['sell']['min'])
         
-groups = ["Afterburneres", ""]
+    def insert_market_price(self, data):
+        logger.debug("HELLO LOGGER")
+        """ insert into the psql table 'marketprices' the data given as an input
+        the input data shouls usually be a json lookup on the eve-central API
+        """
+        logger.debug("attempting to insert_market_price {dt}".
+                     format(dt = data))
+        # buy orders - wehere we sell an item
+        x = data["buy"]
+        if x["forQuery"]["regions"]:
+            pass
+        else:
+            x["forQuery"]["regions"].append(0)
         
-systems = ["Lustrevik", "Teonusude", "Gelfiven", "Gulfonodi", "Nakugard", "Tvink", 
-           "Lanngisi", "Magiko", "Vullat","Eystur", "Hek", 
-           "Hror", "Otou", "Nakugard", "Uttindar"]
-
-systems = ["Rens"]
-
-x = queries.find_meta_mods(4)
-y = set(x).intersection(set(queries.find_high_slots()))
-
-for system in systems:
-    for item in y:
-        print ("system = {sys} item = {it}".format(sys = system, it = queries.get_item_name(item)))
-        print ("system= {sys} item = {it}".format(sys = queries.get_system_id(system), it = item))
-        insert_market_price(now_value(queries.get_system_id(system), item))
-        print ("just finished adding data")
-
-def find_cheapest(item):
-    hubs = ["Rens", "Jita", "Amarr"]
-    cheapest_location = None
-    cheapest_price = -1
-    for hub in hubs:
+        if x["forQuery"]["systems"]:
+            pass
+        else:
+            x["forQuery"]["systems"].append(0)
         try:
-            if (cheapest_price == -1) and (get_stored_sale_price(item, queries.get_system_id(hub)) > 0):
-                print ("cheapest price = -1")
-                cheapest_location = hub
-                cheapest_price = get_stored_sale_price(item, queries.get_system_id(hub))
-            elif get_stored_sale_price(item, queries.get_system_id(hub)) < cheapest_price:
-                cheapest_location = hub
-                cheapest_price = get_stored_sale_price(item, queries.get_system_id(hub))
-        except:
-            insert_market_price(now_value(queries.get_system_id(hub), item))
-            get_stored_sale_price(item, queries.get_system_id(hub))
-    return (cheapest_location, cheapest_price)
-            
+            self.currQ.execute("INSERT INTO marketprices " 
+                        "(direction, " 
+                        "item, "
+                        "region, "
+                        "system, "
+                        "avg, "
+                        "fivepercent, "
+                        "generated, "
+                        "hightolow, "
+                        "max, "
+                        "median, "
+                        "min, "
+                        "stddev, "
+                        "variance, "
+                        "volume, "
+                        "wavg, "
+                        "source) "
+                        "VALUES ( "
+                        "{dir}, " 
+                        "{itm}, "
+                        "{rgn}, "
+                        "{sys}, "
+                        "{avg}, "
+                        "{pcn}, "
+                        "{gnr}, "
+                        "{htl}, "
+                        "{max}, "
+                        "{mdn}, "
+                        "{min}, "
+                        "{dev}, "
+                        "{vrn}, "
+                        "{vol}, "
+                        "{wvg}, "
+                        "{src})".
+                        format(
+                        dir = "'they_buy'", 
+                        itm = x["forQuery"]["types"][0],
+                        rgn = x["forQuery"]["regions"][0],
+                        sys = x["forQuery"]["systems"][0],
+                        avg = x["avg"],
+                        pcn = x["fivePercent"],
+                        gnr = x["generated"],
+                        htl = x["highToLow"],
+                        max = x["max"],
+                        mdn = x["median"],
+                        min = x["min"],
+                        dev = x["stdDev"],
+                        vrn = x["variance"],
+                        vol = x["volume"],
+                        wvg = x["wavg"], 
+                        src = "'eve-market'")
+                        )
+        except psycopg2.IntegrityError:
+            self.connQ.rollback()
+            logger.debug('Duplicate market data, connQ.execute rolled back!')
+        else:
+            self.connQ.commit() 
+        #sell orders, where we buy something from them
+        x = data["sell"]
+        if x["forQuery"]["regions"]:
+            pass
+        else:
+            x["forQuery"]["regions"].append(0)
+        
+        if x["forQuery"]["systems"]:
+            pass
+        else:
+            x["forQuery"]["systems"].append(0)
+        try:
+            self.currQ.execute("INSERT INTO marketprices " 
+                        "(direction, " 
+                        "item, "
+                        "region, "
+                        "system, "
+                        "avg, "
+                        "fivepercent, "
+                        "generated, "
+                        "hightolow, "
+                        "max, "
+                        "median, "
+                        "min, "
+                        "stddev, "
+                        "variance, "
+                        "volume, "
+                        "wavg, "
+                        "source) "
+                        "VALUES ( "
+                        "{dir}, " 
+                        "{itm}, "
+                        "{rgn}, "
+                        "{sys}, "
+                        "{avg}, "
+                        "{pcn}, "
+                        "{gnr}, "
+                        "{htl}, "
+                        "{max}, "
+                        "{mdn}, "
+                        "{min}, "
+                        "{dev}, "
+                        "{vrn}, "
+                        "{vol}, "
+                        "{wvg}, "
+                        "{src})".
+                        format(
+                        dir = "'they_sell'", 
+                        itm = x["forQuery"]["types"][0],
+                        rgn = x["forQuery"]["regions"][0],
+                        sys = x["forQuery"]["systems"][0],
+                        avg = x["avg"],
+                        pcn = x["fivePercent"],
+                        gnr = x["generated"],
+                        htl = x["highToLow"],
+                        max = x["max"],
+                        mdn = x["median"],
+                        min = x["min"],
+                        dev = x["stdDev"],
+                        vrn = x["variance"],
+                        vol = x["volume"],
+                        wvg = x["wavg"], 
+                        src = "'eve-market'")
+                        )
+        except psycopg2.IntegrityError:
+            self.connQ.rollback()
+            logger.debug('Duplicate market data, connQ.execute rolled back!')
+        else:
+            self.connQ.commit() 
+        #all orders - given as an average of both
+        x = data["all"]
+        if x["forQuery"]["regions"]:
+            pass
+        else:
+            x["forQuery"]["regions"].append(0)
+        
+        if x["forQuery"]["systems"]:
+            pass
+        else:
+            x["forQuery"]["systems"].append(0)
+        try:
+            self.currQ.execute("INSERT INTO marketprices " 
+                        "(direction, " 
+                        "item, "
+                        "region, "
+                        "system, "
+                        "avg, "
+                        "fivepercent, "
+                        "generated, "
+                        "hightolow, "
+                        "max, "
+                        "median, "
+                        "min, "
+                        "stddev, "
+                        "variance, "
+                        "volume, "
+                        "wavg, "
+                        "source) "
+                        "VALUES ( "
+                        "{dir}, " 
+                        "{itm}, "
+                        "{rgn}, "
+                        "{sys}, "
+                        "{avg}, "
+                        "{pcn}, "
+                        "{gnr}, "
+                        "{htl}, "
+                        "{max}, "
+                        "{mdn}, "
+                        "{min}, "
+                        "{dev}, "
+                        "{vrn}, "
+                        "{vol}, "
+                        "{wvg}, "
+                        "{src})".
+                        format(
+                        dir = "'they_all'", 
+                        itm = x["forQuery"]["types"][0],
+                        rgn = x["forQuery"]["regions"][0],
+                        sys = x["forQuery"]["systems"][0],
+                        avg = x["avg"],
+                        pcn = x["fivePercent"],
+                        gnr = x["generated"],
+                        htl = x["highToLow"],
+                        max = x["max"],
+                        mdn = x["median"],
+                        min = x["min"],
+                        dev = x["stdDev"],
+                        vrn = x["variance"],
+                        vol = x["volume"],
+                        wvg = x["wavg"], 
+                        src = "'eve-market'")
+                        )
+        except psycopg2.IntegrityError:
+            self.connQ.rollback()
+            logger.debug('Duplicate market data, connQ.execute rolled back!')
+        else:
+            self.connQ.commit() 
+        
+    #get Stored Sell values
+    def get_stored_sale_price(self, item, system):
+        logger.debug("HELLO LOGGER")
+        self.currQ.execute("SELECT min FROM marketprices WHERE (direction = \'they_sell\' AND "
+                      "item = {it} AND system = {sys}) "
+                      "ORDER BY generated DESC "
+                      "LIMIT 1".
+                      format(it = item, sys = system))
+        #print ("item {id} system {sys}".format(id = item, sys = system))
+        #print ("db returns.. {db}".format(db = self.currQ.fetchone()[0]))
+        x = self.currQ.fetchone()
+        return (round(x[0], 2))
     
-def get_none_sold_dict(items, system):
-    consider_these = {}
-    for item in items:
-        if get_stored_sale_price(item, system) == 0:
-            consider_these[queries.get_item_name(item)] = [get_stored_sale_price(item, queries.get_system_id("Jita")),  get_stored_sale_price(item, queries.get_system_id("Rens")), (get_stored_sale_price(item, queries.get_system_id("Rens")) - get_stored_sale_price(item, queries.get_system_id("Jita")))]
-    return consider_these
+    #itemID, locationID, typeID, quantity, flag, singleto
+    def find_cheapest(self, item):
+        logger.debug("HELLO LOGGER")
+        hubs = ["Rens", "Jita", "Amarr"]
+        cheapest_location = None
+        cheapest_price = -1
+        for hub in hubs:
+            #self.now_value(hub, item)
+            try:
+                if (cheapest_price == -1) and (self.get_stored_sale_price(item, self.queries.get_system_id(hub)) > 0):
+                    #print ("cheapest price = -1")
+                    cheapest_location = hub
+                    cheapest_price = self.get_stored_sale_price(item, self.queries.get_system_id(hub))
+                elif self.get_stored_sale_price(item, self.queries.get_system_id(hub)) < cheapest_price:
+                    cheapest_location = hub
+                    cheapest_price = self.get_stored_sale_price(item, self.queries.get_system_id(hub))
+            except:
+                self.insert_market_price(self.now_value(self.queries.get_system_id(hub), item))
+                self.get_stored_sale_price(item, self.queries.get_system_id(hub))
+        return (cheapest_location, cheapest_price)
+             
+        
+    def get_none_sold_dict(self, items, system):
+        logger.debug("HELLO LOGGER")
+        these_arent_sold = []
+        for item in items:
+            if self.get_stored_sale_price(item, system) == 0:
+                these_arent_sold.append(item)
+        return these_arent_sold
+    
+    def get_profit_on_items(self, items, from_system, to_system):
+        profit_from_item = {}
+        for item in items:
+            profit = ([self.get_stored_sale_price(item, self.queries.get_system_id(from_system)),
+                       self.get_stored_sale_price(item, self.queries.get_system_id(to_system)),
+                       (round(self.get_stored_sale_price(item, self.queries.get_system_id(to_system)) - 
+                              self.get_stored_sale_price(item, self.queries.get_system_id(from_system)), 2))])
+            profit_from_item[self.queries.get_item_name(item)] = profit
+        print ("trype(profit_from_item)", type(profit))
+        return profit_from_item
 
-#sell_these = get_none_sold_dict(y, queries.get_system_id("Lustrevik"))
-#sell_these.sort(key=lambda x: x[2], reverse=True)
-#pprint.pprint(sell_these)
 
-#sell_these = get_none_sold_dict(y, queries.get_system_id("Lustrevik"))
-for keys, values in sorted(sell_these.items(), key=lambda e: e[1][2], reverse = True):
-    print (keys, values, find_cheapest(queries.get_item_id(keys)))
+def main():
+    # setup logging functions
+    import logging.config
+    logging.config.fileConfig('/home/adam/workspace1/eve-client/eve_client_logging.conf')
+    # your program code  
+    #logging.basicConfig(filename='first_transactions.log', format='%(asctime)s %(levelname)s: %(message)s', level=logging.DEBUG)
+    #logging.info('Starting up first_transactions main()')
+    trans = MarketQuestions()
+    ## eve api
+    auth = api.auth(keyID=CORP_KEYID, vCode=CORP_VCODE)
+    result2 = auth.account.Characters()
+    cachedApi = eveapi.EVEAPIConnection(cacheHandler=MyCacheHandler(debug=True)) 
+    # Now the best way to iterate over the characters on your account and show
+    # the isk balance is probably this way:
+    """
+    for character in result2.characters:
+        if  "Flicky G" == character.name:
+            wallet = auth.corp.AccountBalance(characterID=character.characterID)
+            for x in wallet.accounts:
+                print (x)
+    """         
+    corp = cachedApi.auth(keyID=1383071, vCode="m0ecx5e1r8RCMsizNKXyB91HQchkHjJmNJlG8or0xy3VvkpiAJj1J7wXb70lUMm0").corporation(98436502)
+    corpTransactions  = corp.WalletTransactions()
+    x = trans.now_value(30002510, 7621)
+    corpAssets = corp.AssetList().assets
+    """
+    for x in corpTransactions.transactions:
+        print (x)
+        
+    corpJournal = corp.WalletJournal()
+    for x in corpJournal.entries:
+        print (x)
+        
 
-for item in y:
-    markets.get_date_last_entry(item, queries.get_region_id("Heimatar"))
+    """
+    #requests_cache.install_cache(cache_name='first_transactions', expires_after = 1)
+    #requests_cache.clear()
+    
+    """
+    for x in corpAssets:
+        #print (x.itemID, queries.get_system_from_station_ID(x.locationID))
+        y = trans.now_value(trans.queries.get_system_from_station_ID(x.locationID), x.typeID)
+        trans.insert_market_price(y)
+    
+    # find group and other items in the gorup of 220mm Vulcan AutoCannon I
+    #trans.queries.get_item_id("220mm Vulcan AutoCannon I")
+    #trans.queries.get_market_group_from_type_id(490)
+    #items = trans.queries.get_items_in_group(575)
+    
+    
+    systems = []    
+    systems.append(trans.queries.get_system_id("Hek"))
+    systems.append(trans.queries.get_system_id("Rens"))
+    """
+    
+    
+    """
+    for theSystems in systems:
+        for theItems in items:
+            markets.get_date_last_entry(theItems, theSystems)
+            insert_market_price(now_value(theSystems, theItems))
+            
+    get_stored_sale_price(490, queries.get_system_id("Hek"))
+    """
+    
 
-for item in y:
-    print (queries.get_item_name(item))
+    """            
+    groups = ["Afterburneres", ""]
+            
+    systems = ["Lustrevik", "Teonusude", "Gelfiven", "Gulfonodi", "Nakugard", "Tvink", 
+               "Lanngisi", "Magiko", "Vullat","Eystur", "Hek", 
+               "Hror", "Otou", "Nakugard", "Uttindar"]
+
+    """
+    
+    systems = ["Hek", "Rens"]
+    
+    x = trans.queries.find_meta_mods(4)
+    y = set(x).intersection(set(trans.queries.find_high_slots()))
+    
+    """
+    for system in systems:
+        for item in y:
+            print (trans.markets.get_date_last_entry(item, trans.queries.get_region_id_from_system(trans.queries.get_system_id(system))))
+            trans.insert_market_price(trans.now_value(trans.queries.get_system_id(system), item))
+            print (trans.get_stored_sale_price(item, trans.queries.get_system_id(system)))
+    """
+    
+    #find items whicha are cheaper in hek than they are in rens
+    sell_these = []
+    for theItems in y:
+        diff = (trans.get_stored_sale_price(theItems, trans.queries.get_system_id("Hek")) - 
+                trans.get_stored_sale_price(theItems, trans.queries.get_system_id("Rens")))
+        if (diff > 0):
+            #print (queries.get_item_name(theItems), diff, theItems)
+            sell_this = [trans.queries.get_item_name(theItems), round(diff, 2)]
+            sell_these.append(sell_this)
+        else:
+            pass
+        
+    sell_these.sort(key=lambda x: x[1], reverse=True)
+    pprint.pprint(sell_these)
+
 
         
+    #sell_these = get_none_sold_dict(y, queries.get_system_id("Lustrevik"))
+    #sell_these.sort(key=lambda x: x[2], reverse=True)
+    #pprint.pprint(sell_these)
+    
+    sell_these = trans.get_none_sold_dict(y, trans.queries.get_system_id("Lustrevik"))
+    sell_these = trans.get_profit_on_items(sell_these, "Jita", "Rens")
+    sell_these = sorted(sell_these.items(), key=lambda e: e[1][2], reverse = True)
+    
+    text = [[aa, bb, cc, dd] for aa, (bb, cc, dd) in sell_these]
+    headers = ["item", "from price", "to price", "profit"]
+    print (tabulate(text, headers, tablefmt = "simple", numalign= "right", floatfmt = ".2f"))
+
+    """
+    #print ("sell_these", sorted(sell_these.items(), key=lambda e: e[1][2], reverse = True))
+    for items, values in sorted(sell_these.items(), key=lambda e: e[1][2], reverse = True):
+        print ("items", items)
+        cheapest = trans.find_cheapest(trans.queries.get_item_id(items))
+        #logger.debug("attempting to print unsold items item[0] = [iz}, item[1] = {itwo}, cheapest = {ch}".
+         #                  format(iz = values[0], itone = values[1], ch = cheapest))
+        print (items, values[0], values[1], values[2], cheapest)
+    """
+    
+
+
+if __name__ == '__main__':
+    main()

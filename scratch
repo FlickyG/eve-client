@@ -1,3 +1,9 @@
+#break into code
+#code.interact(local=dict(globals(), **locals()))
+
+#cat module-names | sed "s/'/''/g" | sed "s/\(^.*\) is now known as \(.*$\)/UPDATE invTypes SET typeName = '\2' WHERE typeName = \'\1';/g" 
+
+
 # DELETE FROM invTypes WHERE typeID = 370488;
 # DELETE FROM invTypes WHERE typeID = 34417;
 # DELETE FROM invTypes WHERE typeID = 34421;

@@ -31,6 +31,12 @@ class SDEQueries(object):
             self.curr = self.conn.cursor()
         except sqlite3.OperationalError:
             print ("couldn't open the data base at %s" % (location2) )
+        try:
+            location2 = "/Users/adam.green/eve.db"
+            self.conn = sqlite3.connect("/Users/adam.green/Documents/personal-workspace/eve-project/sqlite-latest.sqlite")
+            self.curr = self.conn.cursor()
+        except sqlite3.OperationalError:
+            print ("couldn't open the data base at %s" % (location2) )
 
 
     def get_item_id(self, interestingItem):
@@ -107,6 +113,30 @@ class SDEQueries(object):
                   "returned a NoneType")
             raise
         y = x[1] 
+        return y
+    
+    def get_region_id_from_system(self, system):
+        ''' Returns the Region ID when given the string representation
+        '''
+        # check input is a string
+        try:
+            assert type(system) is int, "requires a int"
+        except:
+            print ("you passed get_region_if_from_system somethig that wasn't a string")
+            raise 
+            sys.exit(0)
+        self.curr.execute("SELECT regionID FROM mapSolarSystems" 
+                            " WHERE solarSystemID = \"{id}\"".
+                           format(id = str(system)))
+        x = self.curr.fetchone()
+        # Check output makes sense
+        try:
+            assert x[0] != type(None), "requires not a none type"
+        except:
+            print("get_region_if_from_system couldn't find what you were looking for and "
+                  "returned a NoneType")
+            raise
+        y = x[0] 
         return y
     
     def get_region_name(self, interestingRegion):
