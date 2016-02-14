@@ -68,7 +68,7 @@ class EVECrest(object):
             return data
         except ConnectionError as e:
             # to-do - needs to handle 404 errors too
-            logger.debug("")
+            logger.debug("fetch_martket_history exit 101")
             try:
                 if e.args[0].args[1].errno == 104:
                     #print ("eve crest connection reset by peer {ti}, {name}".

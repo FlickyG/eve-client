@@ -16,7 +16,7 @@ class SDEQueries(object):
         You may need to repoint the location of the sqlite3.connect statement
         TDO - error hanfdling on this and option for CLI input
     """
-    #self.logging.basicConfig(filename='eve-first_transactions.log',level=logging.DEBUG)
+    #self.logging.basicConfig(filename='eve-EVEMarkets.log',level=logging.DEBUG)
     
     def __init__(self):
         try:
