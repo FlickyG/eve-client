@@ -453,9 +453,33 @@ class MarketQuestions(object):
                        (round(self.get_stored_sale_price(item, self.queries.get_system_id(to_system)) - 
                               self.get_stored_sale_price(item, self.queries.get_system_id(from_system)), 2))])
             profit_from_item[self.queries.get_item_name(item)] = profit
-        print ("trype(profit_from_item)", type(profit))
         return profit_from_item
 
+    #find items which are cheaper in hek than they are in rens
+    def cheaper_between_two_locations(self, items, location1 = "Hek", location2 = "Rens"):
+        sell_these = []
+        for theItems in items:
+            diff = (self.get_stored_sale_price(theItems, self.queries.get_system_id(location1)) - 
+                    self.get_stored_sale_price(theItems, self.queries.get_system_id(location2)))
+            if (diff > 0):
+                #print (queries.get_item_name(theItems), diff, theItems)
+                sell_this = [self.queries.get_item_name(theItems), round(diff, 2)]
+                sell_these.append(sell_this)
+            else:
+                pass
+        headers = ["item", "profit"]
+        sell_these.sort(key=lambda x: x[1], reverse=True)
+        return headers, sell_these
+    
+
+    # finds items unsold in a system and finds the price in two other hubs
+    def unsold_prices_elsewhere(self, items, location = "Lustrevik", location1 = "Jita", location2 = "Rens"):
+        sell_these = self.get_none_sold_dict(items, self.queries.get_system_id(location))
+        sell_these = self.get_profit_on_items(sell_these, location1, location2)
+        sell_these.sorted(sell_these.items(), key=lambda e: e[1][2], reverse = True)
+        text = [[aa, bb, cc, dd] for aa, (bb, cc, dd) in sell_these]
+        headers = ["item", "from price", "to price", "profit"]
+        print (tabulate(text, headers, tablefmt = "simple", numalign= "right", floatfmt = ".2f"))
 
 def main():
     # setup logging functions
@@ -545,46 +569,10 @@ def main():
             print (trans.get_stored_sale_price(item, trans.queries.get_system_id(system)))
     """
     
-    #find items whicha are cheaper in hek than they are in rens
-    sell_these = []
-    for theItems in y:
-        diff = (trans.get_stored_sale_price(theItems, trans.queries.get_system_id("Hek")) - 
-                trans.get_stored_sale_price(theItems, trans.queries.get_system_id("Rens")))
-        if (diff > 0):
-            #print (queries.get_item_name(theItems), diff, theItems)
-            sell_this = [trans.queries.get_item_name(theItems), round(diff, 2)]
-            sell_these.append(sell_this)
-        else:
-            pass
-        
-    sell_these.sort(key=lambda x: x[1], reverse=True)
-    pprint.pprint(sell_these)
-
-
-        
-    #sell_these = get_none_sold_dict(y, queries.get_system_id("Lustrevik"))
-    #sell_these.sort(key=lambda x: x[2], reverse=True)
-    #pprint.pprint(sell_these)
-    
-    sell_these = trans.get_none_sold_dict(y, trans.queries.get_system_id("Lustrevik"))
-    sell_these = trans.get_profit_on_items(sell_these, "Jita", "Rens")
-    sell_these = sorted(sell_these.items(), key=lambda e: e[1][2], reverse = True)
-    
-    text = [[aa, bb, cc, dd] for aa, (bb, cc, dd) in sell_these]
-    headers = ["item", "from price", "to price", "profit"]
+    headers, text = trans.cheaper_between_two_locations(y)
     print (tabulate(text, headers, tablefmt = "simple", numalign= "right", floatfmt = ".2f"))
 
-    """
-    #print ("sell_these", sorted(sell_these.items(), key=lambda e: e[1][2], reverse = True))
-    for items, values in sorted(sell_these.items(), key=lambda e: e[1][2], reverse = True):
-        print ("items", items)
-        cheapest = trans.find_cheapest(trans.queries.get_item_id(items))
-        #logger.debug("attempting to print unsold items item[0] = [iz}, item[1] = {itwo}, cheapest = {ch}".
-         #                  format(iz = values[0], itone = values[1], ch = cheapest))
-        print (items, values[0], values[1], values[2], cheapest)
-    """
-    
-
+    trans.unsold_prices_elsewhere(y)
 
 if __name__ == '__main__':
     main()
