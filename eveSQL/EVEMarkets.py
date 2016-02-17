@@ -178,8 +178,8 @@ class MarketQuestions(object):
             return response
         return hook
     
-    def now_value(self, systemID, interestingItem):
-        marketStatUrl = "http://api.eve-central.com/api/marketstat/json?usesystem=" + str(systemID) + "&typeid=" + str(interestingItem)
+    def now_value_system(self, system, interestingItem):
+        marketStatUrl = "http://api.eve-central.com/api/marketstat/json?usesystem=" + str(system) + "&typeid=" + str(interestingItem)
         resp = self.s.get(url=marketStatUrl)
         # print resp.text
         data = json.loads(resp.text)[0]
@@ -188,6 +188,18 @@ class MarketQuestions(object):
         # pprint.pprint(data)
         # print ("They Buy ", data[0]['buy']['max'])
         # print ("They Sell ", data[0]['sell']['min'])
+
+    def now_value_region(self, region, interestingItem):
+        marketStatUrl = "http://api.eve-central.com/api/marketstat/json?useregion=" + str(region) + "&typeid=" + str(interestingItem)
+        resp = self.s.get(url=marketStatUrl)
+        # print resp.text
+        data = json.loads(resp.text)[0]
+        #print ("data", data["buy"]["generated"])
+        return data
+        # pprint.pprint(data)
+        # print ("They Buy ", data[0]['buy']['max'])
+        # print ("They Sell ", data[0]['sell']['min'])
+
         
     def insert_market_price(self, data):
         """ insert into the psql table 'marketprices' the data given as an input
@@ -451,7 +463,7 @@ class MarketQuestions(object):
         cheapest_location = None
         cheapest_price = -1
         for hub in hubs:
-            #self.now_value(hub, item)
+            #self.now_value_system(hub, item)
             try:
                 if (cheapest_price == -1) and (self.get_stored_sale_price(item, self.queries.get_system_id(hub)) > 0):
                     #print ("cheapest price = -1")
@@ -462,7 +474,7 @@ class MarketQuestions(object):
                     cheapest_price = self.get_stored_sale_price(item, self.queries.get_system_id(hub))
             except:
                 logger.debug("finding chepest - exception block")
-                self.insert_market_price(self.now_value(self.queries.get_system_id(hub), item))
+                self.insert_market_price(self.now_value_system(self.queries.get_system_id(hub), item))
                 self.get_stored_sale_price(item, self.queries.get_system_id(hub))
         return (cheapest_location, cheapest_price)
              
@@ -530,11 +542,11 @@ class MarketQuestions(object):
             for theItems in items:
                 region = self.queries.get_region_id_from_system(self.queries.get_system_id(system))
                 self.markets.get_date_last_entry(theItems, region)
-                self.insert_market_price(self.now_value(self.queries.get_system_id(system), theItems))
+                self.insert_market_price(self.now_value_system(self.queries.get_system_id(system), theItems))
 
     def buy_or_sell(self, item, system):
-        print ("system", system)
         region = self.queries.get_region_id_from_system(system)
+        ec_data = self.get_stored_sale_price(item, system)
         eve_data = self.get_ingame_history(item, region)
         range = eve_data["max"] - eve_data["min"]
         equal_avg = range / 2.0
@@ -581,7 +593,7 @@ def main():
     """         
     corp = cachedApi.auth(keyID=1383071, vCode="m0ecx5e1r8RCMsizNKXyB91HQchkHjJmNJlG8or0xy3VvkpiAJj1J7wXb70lUMm0").corporation(98436502)
     corpTransactions  = corp.WalletTransactions()
-    x = trans.now_value(30002510, 7621)
+    x = trans.now_value_system(30002510, 7621)
     corpAssets = corp.AssetList().assets
     """
     for x in corpTransactions.transactions:
@@ -611,7 +623,7 @@ def main():
     """
     for x in corpAssets:
         #print (x.itemID, queries.get_system_from_station_ID(x.locationID))
-        y = trans.now_value(trans.queries.get_system_from_station_ID(x.locationID), x.typeID)
+        y = trans.now_value_system(trans.queries.get_system_from_station_ID(x.locationID), x.typeID)
         trans.insert_market_price(y)
     
     # find group and other items in the gorup of 220mm Vulcan AutoCannon I
