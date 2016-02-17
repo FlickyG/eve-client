@@ -13,9 +13,10 @@ import logging
 
 eve = pycrest.EVE()
 eve()
+print ("###### NAME EVE CREST ####", __name__)
 logger = logging.getLogger(__name__)
 #logger.propagate = False
-print ("EVE CREST logger handlers", logger.handle)
+
 
 def getByAttrVal(objlist, attr, val):
     ''' Searches list of dicts for a dict with dict[attr] == val '''

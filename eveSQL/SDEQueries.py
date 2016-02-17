@@ -116,7 +116,7 @@ class SDEQueries(object):
         return y
     
     def get_region_id_from_system(self, system):
-        ''' Returns the Region ID when given the string representation
+        ''' Returns the Region ID when given the int representation
         '''
         # check input is a string
         try:
